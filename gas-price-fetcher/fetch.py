@@ -6,8 +6,6 @@ from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
 import logging
 
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
-
 def fetchGasPrice(url: str) -> Dict[str, Any]:
     '''
         Given URL of end point producing gas price feed,
