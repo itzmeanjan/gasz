@@ -12,7 +12,8 @@ from json import dumps
 
 import logging
 # Setting up logging
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 # Loading .env file content
 #
@@ -40,7 +41,8 @@ def connectToRedis() -> Redis:
     '''
     conn = None
     try:
-        conn = Redis(host=RedisHost, port=RedisPort, password=RedisPassword, db=RedisDB)
+        conn = Redis(host=RedisHost, port=RedisPort,
+                     password=RedisPassword, db=RedisDB)
         conn.ping()
 
         logging.info('Connected to Redis')
@@ -63,7 +65,7 @@ def fetchGasPrice(url: str) -> Dict[str, Any]:
 
         if not (resp.status_code == 200):
             raise Exception('Response with non-200 status code')
-        
+
         data = resp.json()
         resp.close()
     except HTTPError as e:
@@ -75,20 +77,32 @@ def fetchGasPrice(url: str) -> Dict[str, Any]:
     finally:
         return data
 
+
 def main():
     conn = connectToRedis()
     if not conn:
         exit(1)
-    
+
+    data = dict()
     while True:
-        data = fetchGasPrice(GasPriceProducer)
-        if not data:
+        tmp = fetchGasPrice(GasPriceProducer)
+        # If empty response received from ethgasstation
+        if not tmp:
             sleep(SleepPeriod)
-        
-        logging.info(f'Published to {conn.publish(RedisPubSubChannel, dumps(data))} channel(s)')
+            continue
+
+        # If previous data and current data same, no need to publish
+        if data == tmp:
+            sleep(SleepPeriod)
+            continue
+
+        # Only if data received gets updated ( i.e. different than previous iteration ),
+        # then we'll publish it to channel
+        data = tmp
+        logging.info(
+            f'Published to {conn.publish(RedisPubSubChannel, dumps(data))} channel(s)')
         sleep(SleepPeriod)
 
-        
 
 if __name__ == '__main__':
     try:
