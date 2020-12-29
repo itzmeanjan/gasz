@@ -2,16 +2,37 @@
 
 from dotenv import load_dotenv
 from os import getenv
-import logging
 from typing import Any, Dict
 from requests import get
 from requests.exceptions import Timeout
 from requests.exceptions import HTTPError
+from redis import Redis
+
 import logging
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 load_dotenv()
+
 GasPriceProducer = getenv('GasPriceProducer')
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+RedisHost = getenv('RedisHost')
+RedisPort = getenv('RedisPort')
+RedisPassword = getenv('RedisPassword')
+
+
+def connectToRedis() -> Redis:
+    '''
+        Connecting to Redis instance and returning
+        connection object back to caller
+    '''
+    conn = None
+    try:
+        conn = Redis(host=RedisHost, port=RedisPort, password=RedisPassword)
+        logging.info('Connected to Redis')
+    except Exception as e:
+        logging.error(f'{e}')
+    finally:
+        return conn
+
 
 def fetchGasPrice(url: str) -> Dict[str, Any]:
     '''
@@ -38,6 +59,8 @@ def fetchGasPrice(url: str) -> Dict[str, Any]:
         return data
 
 def main():
+    conn = connectToRedis()
+    print(conn)
     print(fetchGasPrice(GasPriceProducer))
 
 if __name__ == '__main__':
