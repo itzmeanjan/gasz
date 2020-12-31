@@ -26,9 +26,9 @@ func Start() {
 	upgrader := websocket.Upgrader{}
 
 	{
-		v1.POST("/subscribe", func(c echo.Context) error {
+		v1.GET("/subscribe", func(c echo.Context) error {
 
-			conn, err := upgrader.Upgrade(c.Response(), c.Request(), c.Request().Header)
+			conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 			if err != nil {
 				return err
 			}
@@ -39,15 +39,18 @@ func Start() {
 
 			var _err error
 
+			// Handling client request and responding accordingly
 			for {
 
 				var payload data.Payload
 
+				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
 					_err = err
 					break
 				}
 
+				// Validating client payload
 				if err := payload.Validate(); err != nil {
 
 					if err := conn.WriteJSON(&data.ErrorResponse{
@@ -61,6 +64,7 @@ func Start() {
 					break
 				}
 
+				// Writing subscription confirmation message
 				if err := conn.WriteJSON(&data.ErrorResponse{
 					Message: "Subscribed",
 				}); err != nil {
