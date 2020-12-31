@@ -6,8 +6,8 @@ import (
 	"gas-price-notifier/data"
 	"gas-price-notifier/pubsub"
 	"log"
-	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -23,29 +23,54 @@ func Start() {
 	handle.Use(middleware.Logger())
 
 	v1 := handle.Group("/v1")
+	upgrader := websocket.Upgrader{}
 
 	{
 		v1.POST("/subscribe", func(c echo.Context) error {
 
-			var payload data.Payload
+			conn, err := upgrader.Upgrade(c.Response(), c.Request(), c.Request().Header)
+			if err != nil {
+				return err
+			}
 
-			if err := c.Bind(&payload); err != nil {
+			// Scheduling graceful connection closing, to be invoked when
+			// getting out of this function's scope
+			defer conn.Close()
 
-				return c.JSON(http.StatusBadRequest, &data.ErrorResponse{
-					Message: "Bad Payload",
-				})
+			var _err error
+
+			for {
+
+				var payload data.Payload
+
+				if err := conn.ReadJSON(&payload); err != nil {
+					_err = err
+					break
+				}
+
+				if err := payload.Validate(); err != nil {
+
+					if err := conn.WriteJSON(&data.ErrorResponse{
+						Message: "Bad Subscription Request",
+					}); err != nil {
+						_err = err
+						break
+					}
+
+					_err = err
+					break
+				}
+
+				if err := conn.WriteJSON(&data.ErrorResponse{
+					Message: "Subscribed",
+				}); err != nil {
+					_err = err
+					break
+				}
 
 			}
 
-			if err := payload.Validate(); err != nil {
-
-				return c.JSON(http.StatusBadRequest, &data.ErrorResponse{
-					Message: "Bad Payload",
-				})
-
-			}
-
-			return c.JSON(http.StatusOK, payload)
+			return _err
 
 		})
 	}
