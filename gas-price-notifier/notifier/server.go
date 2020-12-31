@@ -64,7 +64,8 @@ func Start() {
 				// Validating client payload
 				if err := payload.Validate(); err != nil {
 
-					if err := conn.WriteJSON(&data.ErrorResponse{
+					if err := conn.WriteJSON(&data.ClientResponse{
+						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
 						_err = err
@@ -90,7 +91,8 @@ func Start() {
 					_, ok := subscriptions[payload.String()]
 					if ok {
 
-						if err := conn.WriteJSON(&data.ErrorResponse{
+						if err := conn.WriteJSON(&data.ClientResponse{
+							Code:    0,
 							Message: "Already Subscribed",
 						}); err != nil {
 							facedErrorInSwitchCase = true
@@ -110,7 +112,8 @@ func Start() {
 					_, ok := subscriptions[payload.String()]
 					if !ok {
 						// Writing subscription confirmation message
-						if err := conn.WriteJSON(&data.ErrorResponse{
+						if err := conn.WriteJSON(&data.ClientResponse{
+							Code:    0,
 							Message: "Not Subscribed",
 						}); err != nil {
 							facedErrorInSwitchCase = true
