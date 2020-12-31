@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -22,21 +21,28 @@ func Start() {
 	handle := echo.New()
 
 	handle.Use(middleware.Logger())
-	handle.Validator = &data.CustomValidator{Validator: validator.New()}
 
 	v1 := handle.Group("/v1")
 
 	{
-		v1.GET("/subscribe", func(c echo.Context) error {
+		v1.POST("/subscribe", func(c echo.Context) error {
 
 			var payload data.Payload
 
 			if err := c.Bind(&payload); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+
+				return c.JSON(http.StatusBadRequest, &data.ErrorResponse{
+					Message: "Bad Payload",
+				})
+
 			}
 
-			if err := c.Validate(&payload); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			if err := payload.Validate(); err != nil {
+
+				return c.JSON(http.StatusBadRequest, &data.ErrorResponse{
+					Message: "Bad Payload",
+				})
+
 			}
 
 			return c.JSON(http.StatusOK, payload)
