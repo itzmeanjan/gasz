@@ -13,7 +13,7 @@ import (
 // Connect - Connects to Redis instance
 func Connect() *redis.Client {
 
-	db, err := strconv.Atoi(config.Get("RedisDatabase"))
+	db, err := strconv.Atoi(config.Get("RedisDB"))
 	if err != nil {
 		log.Fatalf("[!] Bad Redis database : %s\n", err.Error())
 	}
