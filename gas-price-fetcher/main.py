@@ -98,9 +98,15 @@ def main():
 
         # Only if data received gets updated ( i.e. different than previous iteration ),
         # then we'll publish it to channel
+        #
+        # Also note, as of now, `fast`, `fastest`, `safeLow`, `average` gas prices are
+        # going to be published
+        #
+        # We can change it in future, if we're interested in providing more features
+        # from listener side
         data = tmp
         logging.info(
-            f'Published to {conn.publish(RedisPubSubChannel, dumps(data))} channel(s)')
+            f'Published to {conn.publish(RedisPubSubChannel, dumps(dict([(i, data[i]/10) for i in ["fast", "fastest", "safeLow", "average"]])))} channel(s)')
         sleep(SleepPeriod)
 
 
