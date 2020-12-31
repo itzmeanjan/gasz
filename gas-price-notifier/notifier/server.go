@@ -30,25 +30,20 @@ func Start() {
 
 			conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 			if err != nil {
-				return err
+				log.Printf("[!] Failed to upgrade request : %s\n", err.Error())
+				return nil
 			}
 
 			// Scheduling graceful connection closing, to be invoked when
 			// getting out of this function's scope
 			defer conn.Close()
 
-			// All errors encountered in real-time communication
-			// handling logic i.e. 👇 are to be stored here, so that they
-			// can be returned from this function
-			var _err error
 			// For each client connected over websocket, this associative
 			// array to be maintained, so that we can allow each client
 			// subscribe tp different price feeds using single connection
 			//
 			// They will receive notification as soon as any such criteria gets satisfied
-			var subscriptions map[string]*data.PriceSubscription
-
-			subscriptions = make(map[string]*data.PriceSubscription)
+			subscriptions := make(map[string]*data.PriceSubscription)
 
 			// Handling client request and responding accordingly
 			for {
@@ -57,7 +52,7 @@ func Start() {
 
 				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
-					_err = err
+					log.Printf("[!] Failed to read data from client : %s\n", err.Error())
 					break
 				}
 
@@ -68,12 +63,11 @@ func Start() {
 						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
-						_err = err
-						break
+						log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 					}
 
-					_err = err
 					break
+
 				}
 
 				// Kept so that after control gets out of switch case 👇
@@ -90,7 +84,6 @@ func Start() {
 					// Client has already subscribed to this event
 					_, ok := subscriptions[payload.String()]
 					if ok {
-
 						resp := data.ClientResponse{
 							Code:    0,
 							Message: "Already Subscribed",
@@ -98,10 +91,10 @@ func Start() {
 
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
-							_err = err
-							break
+							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
 
+						break
 					}
 
 					// Creating subscription entry for this client in associative array
@@ -116,7 +109,6 @@ func Start() {
 					// of unsubscription
 					subs, ok := subscriptions[payload.String()]
 					if !ok {
-
 						resp := data.ClientResponse{
 							Code:    0,
 							Message: "Not Subscribed",
@@ -124,7 +116,7 @@ func Start() {
 
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
-							_err = err
+							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
 
 						break
@@ -148,7 +140,7 @@ func Start() {
 
 			}
 
-			return _err
+			return nil
 
 		})
 	}
