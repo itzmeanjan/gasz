@@ -12,7 +12,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// PriceSubscription - ...
+// PriceSubscription - Manages whole life cycle of price feed subscription
+// for each client
+//
+// Functions defined on this struct, are supposed to be invoked for subscribing to and unsubscribing from
+// Redis pubsub topic, where price feed data is being published
 type PriceSubscription struct {
 	Client  *websocket.Conn
 	Request *Payload
@@ -37,7 +41,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 	// Scheduling unsubscription call here, to be invoked when
 	// returning from this function
-	defer ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel"))
+	defer ps.Unsubscribe(ctx)
 
 	for {
 
@@ -58,8 +62,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			}
 
 			if err := ps.Client.WriteJSON(&resp); err != nil {
-				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 				facedErrorInSwitchCase = true
+				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 				break
 			}
 
@@ -69,19 +74,22 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			_msg := []byte(m.Payload)
 
 			if err := json.Unmarshal(_msg, &pubsubPayload); err != nil {
-				log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
 				facedErrorInSwitchCase = true
+				log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
+
 				break
 			}
 
 			if err := ps.Client.WriteJSON(&pubsubPayload); err != nil {
-				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 				facedErrorInSwitchCase = true
-				break
+				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 			}
 
 		}
 
+		// Checking whether we've encountered any error with in switch case
+		//
+		// If yes, we can break out of this loop
 		if facedErrorInSwitchCase {
 			break
 		}
@@ -93,7 +101,10 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 // Unsubscribe - Cancelling price feed subscription for specific user
 // and letting client know about it
 func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
-	ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel"))
+	if err := ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
+		log.Printf("[!] Failed to unsubscribe from pubsub topic : %s\n", err.Error())
+		return
+	}
 
 	resp := ClientResponse{
 		Code:    1,
