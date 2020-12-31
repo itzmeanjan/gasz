@@ -91,10 +91,12 @@ func Start() {
 					_, ok := subscriptions[payload.String()]
 					if ok {
 
-						if err := conn.WriteJSON(&data.ClientResponse{
+						resp := data.ClientResponse{
 							Code:    0,
 							Message: "Already Subscribed",
-						}); err != nil {
+						}
+
+						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							_err = err
 							break
@@ -102,20 +104,25 @@ func Start() {
 
 					}
 
-					// Subscription handling logic
+					// Creating subscription entry for this client in associative array
+					//
+					// To be used in future when `unsubscription` request to be received
+					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient)
 
 				case "unsubscription":
 
 					// Client doesn't have any subscription
 					// for this event, so there's no question
 					// of unsubscription
-					_, ok := subscriptions[payload.String()]
+					subs, ok := subscriptions[payload.String()]
 					if !ok {
-						// Writing subscription confirmation message
-						if err := conn.WriteJSON(&data.ClientResponse{
+
+						resp := data.ClientResponse{
 							Code:    0,
 							Message: "Not Subscribed",
-						}); err != nil {
+						}
+
+						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							_err = err
 						}
@@ -124,7 +131,12 @@ func Start() {
 					}
 
 					// Cancelling subscription
-					subscriptions[payload.String()] = nil
+					if subs != nil {
+						subs.Unsubscribe(c.Request().Context())
+					}
+
+					// Removing subscription entry from associative array
+					delete(subscriptions, payload.String())
 
 				}
 
