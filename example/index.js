@@ -1,5 +1,7 @@
 const { client } = require('websocket')
 
+let flag = true
+
 const _client = new client()
 
 _client.on('connectFailed', e => { console.error(`[!] Failed to connect : ${e}`); process.exit(1); })
@@ -13,7 +15,7 @@ _client.on('connect', c => {
     })
 
     // receiving json encoded message
-    c.on('message', d => { 
+    c.on('message', d => {
         console.log(JSON.parse(d.utf8Data))
     })
 
@@ -21,14 +23,16 @@ _client.on('connect', c => {
     handler = _ => {
         c.send(JSON.stringify(
             {
+                type: flag ? 'subscription' : 'unsubscription',
                 field: 'fast',
-                threshold: Math.random() * 10000,
+                threshold: 11,
                 operator: '<'
             }
         ))
+        flag = !flag
     }
 
-    setInterval(handler, 1000)
+    setInterval(handler, 10000)
     handler()
 
 })

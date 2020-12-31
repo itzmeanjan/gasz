@@ -20,7 +20,10 @@ func Start() {
 
 	handle := echo.New()
 
-	handle.Use(middleware.Logger())
+	handle.Use(middleware.LoggerWithConfig(
+		middleware.LoggerConfig{
+			Format: "${time_rfc3339} | ${method} | ${uri} | ${status} | ${remote_ip} | ${latency_human}\n",
+		}))
 
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
@@ -45,7 +48,7 @@ func Start() {
 			// They will receive notification as soon as any such criteria gets satisfied
 			subscriptions := make(map[string]*data.PriceSubscription)
 
-			// Unsubscribing from all subscriptions for client
+			// Unsubscribing from all subscriptions, for this client
 			defer func() {
 				for _, v := range subscriptions {
 					v.Request.Type = "unsubscription"
