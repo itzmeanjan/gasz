@@ -37,7 +37,18 @@ func Start() {
 			// getting out of this function's scope
 			defer conn.Close()
 
+			// All errors encountered in real-time communication
+			// handling logic i.e. 👇 are to be stored here, so that they
+			// can be returned from this function
 			var _err error
+			// For each client connected over websocket, this associative
+			// array to be maintained, so that we can allow each client
+			// subscribe tp different price feeds using single connection
+			//
+			// They will receive notification as soon as any such criteria gets satisfied
+			var subscriptions map[string]*data.PriceSubscription
+
+			subscriptions = make(map[string]*data.PriceSubscription)
 
 			// Handling client request and responding accordingly
 			for {
@@ -64,11 +75,59 @@ func Start() {
 					break
 				}
 
-				// Writing subscription confirmation message
-				if err := conn.WriteJSON(&data.ErrorResponse{
-					Message: "Subscribed",
-				}); err != nil {
-					_err = err
+				// Kept so that after control gets out of switch case 👇
+				// we can check whether we faced any errors with in switch case or not
+				//
+				// If yes, we need to get out of this execution loop, which will result in automatic
+				// closing of underlying network connection
+				var facedErrorInSwitchCase bool
+
+				switch payload.Type {
+
+				case "subscription":
+
+					// Client has already subscribed to this event
+					_, ok := subscriptions[payload.String()]
+					if ok {
+
+						if err := conn.WriteJSON(&data.ErrorResponse{
+							Message: "Already Subscribed",
+						}); err != nil {
+							facedErrorInSwitchCase = true
+							_err = err
+							break
+						}
+
+					}
+
+					// Subscription handling logic
+
+				case "unsubscription":
+
+					// Client doesn't have any subscription
+					// for this event, so there's no question
+					// of unsubscription
+					_, ok := subscriptions[payload.String()]
+					if !ok {
+						// Writing subscription confirmation message
+						if err := conn.WriteJSON(&data.ErrorResponse{
+							Message: "Not Subscribed",
+						}); err != nil {
+							facedErrorInSwitchCase = true
+							_err = err
+						}
+
+						break
+					}
+
+					// Cancelling subscription
+					subscriptions[payload.String()] = nil
+
+				}
+
+				// If we've faced any errors in switch case 👆
+				// we're just breaking out of loop
+				if facedErrorInSwitchCase {
 					break
 				}
 
