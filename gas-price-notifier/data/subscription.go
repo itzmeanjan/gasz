@@ -45,6 +45,10 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 	for {
 
+		if ps.Request.Type != "subscription" {
+			break
+		}
+
 		msg, err := ps.PubSub.ReceiveTimeout(ctx, time.Second)
 		if err != nil {
 			continue
@@ -101,6 +105,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 // Unsubscribe - Cancelling price feed subscription for specific user
 // and letting client know about it
 func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
+
 	if err := ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
 		log.Printf("[!] Failed to unsubscribe from pubsub topic : %s\n", err.Error())
 		return
@@ -114,6 +119,7 @@ func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
 	if err := ps.Client.WriteJSON(&resp); err != nil {
 		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 	}
+
 }
 
 // NewPriceSubscription - Creating new price data subscription for client

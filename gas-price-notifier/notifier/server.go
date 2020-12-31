@@ -45,6 +45,13 @@ func Start() {
 			// They will receive notification as soon as any such criteria gets satisfied
 			subscriptions := make(map[string]*data.PriceSubscription)
 
+			// Unsubscribing from all subscriptions for client
+			defer func() {
+				for _, v := range subscriptions {
+					v.Request.Type = "unsubscription"
+				}
+			}()
+
 			// Handling client request and responding accordingly
 			for {
 
@@ -58,6 +65,8 @@ func Start() {
 
 				// Validating client payload
 				if err := payload.Validate(); err != nil {
+
+					log.Printf("[!] Invalid payload : %s\n", err.Error())
 
 					if err := conn.WriteJSON(&data.ClientResponse{
 						Code:    0,
@@ -124,7 +133,7 @@ func Start() {
 
 					// Cancelling subscription
 					if subs != nil {
-						subs.Unsubscribe(c.Request().Context())
+						subs.Request.Type = "unsubscription"
 					}
 
 					// Removing subscription entry from associative array
