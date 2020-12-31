@@ -31,11 +31,20 @@ func (p *Payload) Validate() error {
 // String - String representatino of subscription request, to be
 // used as unique identifier in HashMap
 func (p Payload) String() string {
-	return fmt.Sprintf("%s-%f-%s", p.Field, p.Threshold, p.Operator)
+	return fmt.Sprintf("%s : %s %f", p.Field, p.Operator, p.Threshold)
 }
 
-// ErrorResponse - When some error is encountered while processing
-// client request, client to be notified with data of this form
-type ErrorResponse struct {
+// ClientResponse - Client to be notified with data of this form
+type ClientResponse struct {
+	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+// PubSubPayload - Data received from Redis pubsub subscription
+// will look like this
+type PubSubPayload struct {
+	Fast    float64 `json:"fast"`
+	Fastest float64 `json:"fastest"`
+	SafeLow float64 `json:"safeLow"`
+	Average float64 `json:"average"`
 }
