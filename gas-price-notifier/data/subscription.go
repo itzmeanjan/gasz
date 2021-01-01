@@ -84,6 +84,14 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				break
 			}
 
+			// If not satisfying criteria, then we're not attempting to deliver
+			//
+			// Otherwise, delivery attempt to be made
+			if !ps.isEligibleForDelivery(&pubsubPayload) {
+				break
+			}
+
+			// Attempting to deliver price feed data, which they've subscribed to
 			if err := ps.Client.WriteJSON(&pubsubPayload); err != nil {
 				facedErrorInSwitchCase = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
