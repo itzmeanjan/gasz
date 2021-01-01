@@ -25,6 +25,18 @@ func Start() {
 			Format: "${time_rfc3339} | ${method} | ${uri} | ${status} | ${remote_ip} | ${latency_human}\n",
 		}))
 
+	handle.GET("/", func(c echo.Context) error {
+		return c.File("assets/index.html")
+	})
+
+	handle.GET("/index.css", func(c echo.Context) error {
+		return c.File("assets/index.css")
+	})
+
+	handle.GET("/favicon.ico", func(c echo.Context) error {
+		return c.File("assets/favicon.ico")
+	})
+
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
 
