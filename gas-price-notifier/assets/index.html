@@ -1,0 +1,198 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>gasz : Etereum Gas Price Notifier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="author" content="Anjan Roy">
+    <meta name="description"
+        content="ette : Ethereum Blockchain Data Indexing Engine, with historical data query & real-time notification support">
+    <meta name="theme-color" content="#667799">
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div id="container" class="container">
+    </div>
+    <button onclick="{
+            if (typeof ethereum !== 'undefined') {
+                ethereum.request({method: 'eth_requestAccounts'}).then(accounts => {
+                    if(accounts.length !== 0) {
+                        const from = accounts[0]
+                        const msg = {
+                            address: from,
+                            timestamp: Math.round(Date.now() / 1000)
+                        }
+                        ethereum.request({
+                            method: 'personal_sign',
+                            params: [JSON.stringify(msg), from]
+                        }).then(signature => {
+                            fetch('/v1/dashboard/newApp', {
+                                method: 'POST',
+                                credentials: 'include',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({message: msg, signature})
+                            })
+                            .then(async resp => {
+                                if(resp.redirected) {
+                                    window.location = resp.url
+                                    return
+                                }
+                                try {
+                                    const v = await resp.json()
+                                    if (resp.status !== 200) {
+                                        alert(v.msg)
+                                        return
+                                    }
+                                    window.location.pathname = '/v1/dashboard'
+                                } catch(_) {
+                                    alert('Something unexpected happened !')
+                                }
+                            })
+                            .catch(_ => alert('Something unexpected happened !'))
+                        }).catch(_ => alert('Metamask failed to sign message !'))
+                    } else {
+                        alert('Metamask access required !')
+                    }
+                }).catch(_ => alert('Metamask access required !'))
+            } else {
+                alert('Metamask needs to be installed !')
+            }
+        }">Create new app</button>
+    <script>
+        fetch('/v1/dashboard/apps', {
+            method: 'GET',
+            credentials: 'include',
+        }).then(async resp => {
+
+            if (resp.redirected) {
+                window.location = resp.url
+                return
+            }
+
+            if (resp.status === 204) {
+
+                const container = document.getElementById('container')
+
+                const card = document.createElement('div')
+                card.className = 'card'
+                card.style.color = '#4a1144'
+
+                const p = document.createElement('p')
+
+                p.innerHTML = 'Why so empty ? 🤔'
+                p.style.color = '#bbccdd'
+                p.style.textAlign = 'center'
+
+                card.appendChild(p)
+
+                container.insertBefore(card, container.firstChild)
+
+                return
+            }
+
+            try {
+                let apps = await resp.json()
+
+                const container = document.getElementById('container')
+
+                apps['apps'].forEach(v => {
+                    const card = document.createElement('div')
+                    card.className = 'card'
+
+                    const paras = [`API Key: ${v.apiKey}`, `Created At: ${(new Date(v.timeStamp)).toString()}`]
+                    paras.forEach(e => {
+                        const p = document.createElement('p')
+
+                        p.innerHTML = e
+                        p.style.color = v.enabled ? '#64d9a4' : '#eb8975'
+
+                        card.appendChild(p)
+                    })
+
+                    card.ondblclick = _ => {
+
+                        fetch('/v1/dashboard/toggleApp', {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ apiKey: v.apiKey })
+                        })
+                            .then(async resp => {
+
+                                if (resp.redirected) {
+                                    window.location = resp.url
+                                    return
+                                }
+
+                                try {
+                                    const v = await resp.json()
+
+                                    if (resp.status !== 200) {
+                                        alert(v.msg)
+                                        return
+                                    }
+
+                                    window.location.pathname = '/v1/dashboard'
+                                } catch (_) {
+                                    alert('Something unexpected happened !')
+                                }
+
+                            })
+                            .catch(_ => alert('Something unexpected happened !'))
+
+                    }
+
+                    container.insertBefore(card, container.firstChild)
+                })
+
+                fetch('/v1/dashboard/plan', {
+                    method: 'GET',
+                    credentials: 'include'
+                }).then(async resp => {
+
+                    if (resp.redirected) {
+                        window.location = resp.url
+                        return
+                    }
+
+                    try {
+
+                        if (resp.status === 200) {
+
+                            const v = await resp.json()
+
+                            const user = apps['apps'][0]['address']
+
+                            const card = document.createElement('div')
+                            card.className = 'card'
+
+                            const p = document.createElement('p')
+                            p.innerHTML = `👋 ${user}, you're subscribed to : ${v.name} with ${v.deliveryCount} requests/day`
+                            p.style.color = '#4f0854'
+                            card.appendChild(p)
+
+                            container.insertBefore(card, container.firstChild)
+
+                        }
+
+                    } catch (_) {
+                        alert('Something unexpected happened !')
+                    }
+
+                })
+
+            } catch (_) {
+                alert('Something unexpected happened !')
+            }
+
+        }).catch(_ => alert('Something unexpected happened !'))
+    </script>
+</body>
+
+</html>
