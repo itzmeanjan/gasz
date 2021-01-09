@@ -9,17 +9,75 @@
     <meta name="description"
         content="ette : Ethereum Blockchain Data Indexing Engine, with historical data query & real-time notification support">
     <meta name="theme-color" content="#667799">
-    <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" type="text/css" href="semantic.min.css">
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"
         integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
     <script src="semantic.min.js"></script>
 </head>
 
-<body>
-    <div id="container" class="container">
+<body style="background: linear-gradient(to right, #669999 0%, #666699 100%);">
+    <div class="ui center aligned container">
+        <form class="ui form">
+            <div class="ui raised very padded text inverted container segment">
+                <h2 class="ui header">Ethereum Gas Price Notification</h2>
+            </div>
+
+            <div class="field">
+                <label>Transaction Speed :</label>
+                <div class="ui search selection dropdown">
+                    <input type="hidden" name="txSpeed">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Fast</div>
+                    <div class="menu">
+                        <div class="item" data-value="0">Fast</div>
+                        <div class="item" data-value="1">Fastest</div>
+                        <div class="item" data-value="2">Average</div>
+                        <div class="item" data-value="3">Safe Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Gas Price ( in Gwei ) :</label>
+                <div class="two fields">
+                    <div class="field">
+                        <div class="ui search selection dropdown">
+                            <input type="hidden" name="operator">
+                            <i class="dropdown icon"></i>
+                            <div class="default text"><</div>
+                            <div class="menu">
+                                <div class="item" data-value="0"><</div>
+                                <div class="item" data-value="1"><=</div>
+                                <div class="item" data-value="2">></div>
+                                <div class="item" data-value="3">>=</div>
+                                <div class="item" data-value="4">==</div>
+                            </div>
+                        </div>    
+                    </div>
+                    <div class="field">
+                        <input type="number" name="gasPrice" placeholder="20">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui button olive" tabindex="0" onclick="{
+                $('.page.dimmer:first').dimmer('toggle');
+            }">
+                Add Gas Price Subscription
+            </div>
+        </form>
     </div>
-    <button onclick="{}"><b>New Gas Price Subscription</b></button>
+    <div class="ui page dimmer">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Gas Price subscription has been created
+            </h2>
+        </div>
+    </div>
+    <script>
+        $('.ui.dropdown').dropdown();
+    </script>
 </body>
 
 </html>
