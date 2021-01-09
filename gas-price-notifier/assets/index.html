@@ -62,6 +62,48 @@
 
             <div class="ui submit button olive" tabindex="0" onclick="{
 
+                const createSubscription = payload => {
+
+                    if (typeof GASZ_SOCKET !== 'undefined') {
+                    
+                        GASZ_SOCKET.send(JSON.stringify(payload))
+
+                        GASZ_SOCKET.onmessage = e => {
+                            const msg = JSON.parse(e.data)
+                    
+                            if ('code' in msg){
+                                if(msg['code'] !== 1) {
+
+                                    $('form').form('clear')
+                                    alert(`${msg['message']}`)
+                                    return
+
+                                }
+                        
+                                $('form').form('clear')
+                                $('.page.dimmer:first').dimmer('toggle')
+                                return
+                            }
+
+                            if (Notification.permission === 'granted') {
+                                const notify = new Notification('Gasz ⚡️', {body: `${msg}`, icon: `http://${window.location.host}/gasz.png`})
+                                
+                                notify.onclick = e => {
+                                    if (typeof GASZ_SOCKET !== 'undefined') {
+                                        GASZ_SOCKET.send(JSON.stringify({...payload, type: 'unsubscription'}))
+                                    }
+                                }
+                            }
+
+                            console.log(msg)
+                        }
+
+                    } else {
+                        alert('Failed to connect to server !')
+                    }
+
+                }
+
                 const form = $('form')
 
                 const txSpeed = form.form('get value', 'txSpeed')
@@ -72,35 +114,27 @@
                     return
                 }
 
-                if (typeof GASZ_SOCKET !== 'undefined') {
-                    
-                    GASZ_SOCKET.send(JSON.stringify({
+                if (Notification.permission !== 'granted') {
+                    Notification.requestPermission().then(p => {
+                        if(p !== 'granted') {
+                            alert('Can\'t work without Notification !')
+                            return
+                        } else {
+                            createSubscription({
+                                type: 'subscription',
+                                field: txSpeed,
+                                operator,
+                                threshold: parseFloat(gasPrice)
+                            })
+                        }
+                    })
+                } else {
+                    createSubscription({
                         type: 'subscription',
                         field: txSpeed,
                         operator,
                         threshold: parseFloat(gasPrice)
-                    }))
-
-                    GASZ_SOCKET.onmessage = e => {
-                        const msg = JSON.parse(e.data)
-                    
-                        if ('code' in msg){
-                            if(msg['code'] !== 1) {
-
-                                $('form').form('clear')
-                                alert(`${msg['message']}`)
-                                return
-
-                            }
-                        
-                            $('form').form('clear')
-                            $('.page.dimmer:first').dimmer('toggle')
-                            return
-                        }
-
-                        console.log(msg)
-                    }
-
+                    })
                 }
 
             }">
@@ -117,8 +151,23 @@
         </div>
     </div>
     <script>
+        const setup = _ => {
+            if (!('Notification' in window)) {
+                alert('Browser doesn\'t support Notification 🙂')
+                return
+            }
+
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission().then(p => {
+                if(p !== 'granted') {
+                    alert('Can\'t work without Notification !')
+                    return
+                }
+            })
+        }
+
         if (typeof GASZ_SOCKET === 'undefined') {
-            const socket = new WebSocket('ws://localhost:7000/v1/subscribe')
+            const socket = new WebSocket(`ws://${window.location.host}/v1/subscribe`)
 
             socket.onopen = e => {
                 console.log('Connection Opened')
@@ -131,12 +180,15 @@
             }
 
             socket.onerror = e => {
-                console.log('Connection Closed')
+                console.log('Error in connection')
                 window.GASZ_SOCKET = null
             }
         }
 
-        $('.ui.dropdown').dropdown();
+        $('.ui.dropdown').dropdown()
+        }
+        console.log()
+        setup()
     </script>
 </body>
 
