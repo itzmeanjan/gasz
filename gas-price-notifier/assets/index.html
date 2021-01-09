@@ -62,20 +62,46 @@
 
             <div class="ui submit button olive" tabindex="0" onclick="{
 
-                const form = $('form');
+                const form = $('form')
 
-                const txSpeed = form.form('get value', 'txSpeed');
-                const operator = form.form('get value', 'operator');
-                const gasPrice = form.form('get value', 'gasPrice');
+                const txSpeed = form.form('get value', 'txSpeed')
+                const operator = form.form('get value', 'operator')
+                const gasPrice = form.form('get value', 'gasPrice')
 
                 if (txSpeed === '' || operator === '' || gasPrice === '') {
                     return
                 }
 
-                console.log(txSpeed, operator, gasPrice);
+                const socket = new WebSocket('ws://localhost:7000/v1/subscribe')
 
-                $('form').form('clear');
-                $('.page.dimmer:first').dimmer('toggle');
+                socket.onopen = e => {
+                    socket.send(JSON.stringify({
+                        type: 'subscription',
+                        field: txSpeed,
+                        operator,
+                        threshold: parseFloat(gasPrice)
+                    }))
+                }
+
+                socket.onmessage = e => {
+                    const msg = JSON.parse(e.data)
+                    
+                    if ('code' in msg){
+                        if(msg['code'] !== 1) {
+
+                            $('form').form('clear')
+                            alert('Failed to subscribe to Gas Price Feed')
+                            return
+
+                        }
+                        
+                        $('form').form('clear')
+                        $('.page.dimmer:first').dimmer('toggle')
+                        return
+                    }
+
+                    console.log(msg)
+                }
 
             }">
                 Add Gas Price Subscription
@@ -86,7 +112,7 @@
         <div class="content">
             <h2 class="ui inverted icon header">
                 <i class="thumbs up icon"></i>
-                Gas Price subscription has been created
+                Gas Price Subscription created
             </h2>
         </div>
     </div>
