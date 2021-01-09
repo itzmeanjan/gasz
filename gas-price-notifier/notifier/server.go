@@ -29,16 +29,16 @@ func Start() {
 		return c.File("assets/index.html")
 	})
 
-	handle.GET("/index.css", func(c echo.Context) error {
-		return c.File("assets/index.css")
-	})
-
 	handle.GET("/semantic.min.css", func(c echo.Context) error {
 		return c.File("assets/semantic.min.css")
 	})
 
 	handle.GET("/semantic.min.js", func(c echo.Context) error {
 		return c.File("assets/semantic.min.js")
+	})
+
+	handle.GET("/themes/default/assets/fonts/icons.woff2", func(c echo.Context) error {
+		return c.File("assets/icons.woff2")
 	})
 
 	handle.GET("/favicon.ico", func(c echo.Context) error {
