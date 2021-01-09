@@ -1,0 +1,18 @@
+{
+    "version": "1.0.0",
+    "name": "gasz",
+    "description": "Ethereum Gas Price Notifier",
+    "launch_path": "/",
+    "icons": {
+        "192": "/gasz_large.png"
+    },
+    "developer": {
+        "name": "Anjan Roy",
+        "url": "https://itzmeanjan.in"
+    },
+    "permissions": {
+        "desktop-notification": {
+            "description": "Requied for showing gas price notification"
+        }
+    }
+}

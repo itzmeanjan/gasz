@@ -6,6 +6,7 @@ import (
 	"gas-price-notifier/data"
 	"gas-price-notifier/pubsub"
 	"log"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -24,6 +25,34 @@ func Start() {
 		middleware.LoggerConfig{
 			Format: "${time_rfc3339} | ${method} | ${uri} | ${status} | ${remote_ip} | ${latency_human}\n",
 		}))
+
+	handle.GET("/", func(c echo.Context) error {
+		return c.File("assets/index.html")
+	})
+
+	handle.GET("/semantic.min.css", func(c echo.Context) error {
+		return c.File("assets/semantic.min.css")
+	})
+
+	handle.GET("/semantic.min.js", func(c echo.Context) error {
+		return c.File("assets/semantic.min.js")
+	})
+
+	handle.GET("/themes/default/assets/fonts/icons.woff2", func(c echo.Context) error {
+		return c.File("assets/icons.woff2")
+	})
+
+	handle.GET("/favicon.ico", func(c echo.Context) error {
+		return c.File("assets/favicon.ico")
+	})
+
+	handle.GET("/gasz.png", func(c echo.Context) error {
+		return c.File("assets/gasz.png")
+	})
+
+	handle.GET("/gasz_large.png", func(c echo.Context) error {
+		return c.File("assets/gasz_large.png")
+	})
 
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
@@ -47,6 +76,7 @@ func Start() {
 			//
 			// They will receive notification as soon as any such criteria gets satisfied
 			subscriptions := make(map[string]*data.PriceSubscription)
+			lock := sync.Mutex{}
 
 			// Unsubscribing from all subscriptions, for this client
 			defer func() {
@@ -63,6 +93,7 @@ func Start() {
 				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
 					log.Printf("[!] Failed to read data from client : %s\n", err.Error())
+					// In case, some error is faced, unlocking critical section here
 					break
 				}
 
@@ -71,12 +102,18 @@ func Start() {
 
 					log.Printf("[!] Invalid payload : %s\n", err.Error())
 
+					// -- Critical section code, starts
+					lock.Lock()
+
 					if err := conn.WriteJSON(&data.ClientResponse{
 						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
 						log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 					}
+
+					lock.Unlock()
+					// -- Critical section code, ends
 
 					break
 
@@ -101,10 +138,16 @@ func Start() {
 							Message: "Already Subscribed",
 						}
 
+						// -- Critical section code, starts
+						lock.Lock()
+
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
+
+						lock.Unlock()
+						// -- Critical section code, ends
 
 						break
 					}
@@ -112,7 +155,7 @@ func Start() {
 					// Creating subscription entry for this client in associative array
 					//
 					// To be used in future when `unsubscription` request to be received
-					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient)
+					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient, &lock)
 
 				case "unsubscription":
 
@@ -126,10 +169,16 @@ func Start() {
 							Message: "Not Subscribed",
 						}
 
+						// -- Critical section code, starts
+						lock.Lock()
+
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
+
+						lock.Unlock()
+						// -- Critical section code, ends
 
 						break
 					}

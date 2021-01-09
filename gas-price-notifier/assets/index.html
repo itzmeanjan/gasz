@@ -1,0 +1,238 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>gasz : Etereum Gas Price Notifier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="author" content="Anjan Roy">
+    <meta name="description"
+        content="ette : Ethereum Blockchain Data Indexing Engine, with historical data query & real-time notification support">
+    <meta name="theme-color" content="#667799">
+    <link rel="stylesheet" type="text/css" href="semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script src="semantic.min.js"></script>
+</head>
+
+<body style="background: linear-gradient(to right, #669999 0%, #666699 100%);">
+    <div class="ui center aligned container">
+        <form class="ui form">
+            <div class="ui raised very padded text inverted container segment">
+                <h2 class="ui header">Ethereum Gas Price Notification</h2>
+            </div>
+
+            <div class="field">
+                <label>Transaction Speed :</label>
+                <div class="ui search selection dropdown">
+                    <input type="hidden" name="txSpeed">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Fast</div>
+                    <div class="menu">
+                        <div class="item" data-value="fast">Fast</div>
+                        <div class="item" data-value="fastest">Fastest</div>
+                        <div class="item" data-value="safeLow">Safe Low</div>
+                        <div class="item" data-value="average">Average</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Gas Price ( in Gwei ) :</label>
+                <div class="two fields">
+                    <div class="field">
+                        <div class="ui search selection dropdown">
+                            <input type="hidden" name="operator">
+                            <i class="dropdown icon"></i>
+                            <div class="default text"><</div>
+                            <div class="menu">
+                                <div class="item" data-value="<"><</div>
+                                <div class="item" data-value="<="><=</div>
+                                <div class="item" data-value=">">></div>
+                                <div class="item" data-value=">=">>=</div>
+                                <div class="item" data-value="==">==</div>
+                            </div>
+                        </div>    
+                    </div>
+                    <div class="field">
+                        <input type="number" min="1" name="gasPrice" placeholder="30">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui submit button olive" tabindex="0" onclick="{
+
+                // Closure for managing ethereum gas price feed subscription/ unsubscription
+                const manageSubscription = payload => {
+
+                    // Checking for existence of globally accessible websocket connection
+                    if (typeof GASZ_SOCKET !== 'undefined') {
+                        
+                        // Sending susbcription/ unsubscription
+                        // request to server
+                        GASZ_SOCKET.send(JSON.stringify(payload))
+
+                        // Handling case when message being received from server
+                        GASZ_SOCKET.onmessage = e => {
+                            // data received from server
+                            const msg = JSON.parse(e.data)
+                            
+                            // -- Staring to handle subscription/ unsubsciption messages
+                            if ('code' in msg){
+                                if(msg['code'] !== 1) {
+                                    if (msg['message'] === 'Already Subscribed') {
+
+                                        $('form').form('clear')
+                                        $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                        }, 1000)
+
+                                    } else {
+                                        $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                        }, 1000)
+                                    }
+                                } else {
+                                    if (msg['message'].includes('Subscribed')) {
+
+                                        $('form').form('clear')
+                                        $('.page.dimmer.subscription.success').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.subscription.success').dimmer('toggle')
+                                        }, 1000)
+
+                                    } else {
+                                        $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                        }, 1000)
+                                    }
+                                }
+
+                                return
+                            }
+                            // -- upto this point
+
+                            if (Notification.permission === 'granted') {
+                                const notify = new Notification('Gasz ⚡️', {body: `Gas Price for ${payload['field'].charAt(0).toUpperCase() + payload['field'].slice(1)} transaction reached ${msg[payload['field']]} Gwei`, icon: 'gasz.png'})
+
+                                notify.onclick = e => {
+                                    if (typeof GASZ_SOCKET !== 'undefined') {
+                                        GASZ_SOCKET.send(JSON.stringify({...payload, type: 'unsubscription'}))
+                                    }
+                                }
+                            }
+                        }
+
+                    } else {
+                        alert('Failed to connect to server !')
+                    }
+
+                }
+
+                const form = $('form')
+
+                const txSpeed = form.form('get value', 'txSpeed')
+                const operator = form.form('get value', 'operator')
+                const gasPrice = form.form('get value', 'gasPrice')
+
+                if (txSpeed === '' || operator === '' || gasPrice === '') {
+                    return
+                }
+
+                if (Notification.permission !== 'granted') {
+                    Notification.requestPermission().then(p => {
+                        if(p !== 'granted') {
+                            alert('`gasz` needs Notification Permission !')
+                            return
+                        }
+
+                        manageSubscription({
+                            type: 'subscription',
+                            field: txSpeed,
+                            operator,
+                            threshold: parseFloat(gasPrice)
+                        })
+                    })
+                } else {
+                    manageSubscription({
+                        type: 'subscription',
+                        field: txSpeed,
+                        operator,
+                        threshold: parseFloat(gasPrice)
+                    })
+                }
+
+            }">
+                Add Gas Price Subscription
+            </div>
+        </form>
+    </div>
+    <div class="ui page dimmer subscription success" onclick="$('.page.dimmer.subscription.success').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Subscription Confirmed 🥳
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer subscription failure" onclick="$('.page.dimmer.subscription.failure').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Already subscribed 😉
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer unsubscription success" onclick="$('.page.dimmer.unsubscription.success').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Unsubscribed 🙂
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer unsubscription failure" onclick="$('.page.dimmer.unsubscription.failure').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Already unsubscribed 🙂
+            </h2>
+        </div>
+    </div>
+    <script>
+        const setup = _ => {
+            if (!('Notification' in window)) {
+                alert('Browser doesn\'t support Notification 🙂')
+                return
+            }
+
+            if (typeof GASZ_SOCKET === 'undefined') {
+                const socket = new WebSocket(`${window.location.protocol === 'https' ? 'wss' : 'ws'}://${window.location.host}/v1/subscribe`)
+
+                socket.onopen = e => {
+                    console.log('[ `gasz` ] Connection Opened')
+                    window.GASZ_SOCKET = socket
+                }
+
+                socket.onclose = e => {
+                    console.log('[ `gasz` ] Connection Closed')
+                    window.GASZ_SOCKET = null
+                }
+
+                socket.onerror = e => {
+                    console.log('[ `gasz` ] Error in connection')
+                    window.GASZ_SOCKET = null
+                }
+            }
+
+            $('.ui.dropdown').dropdown()
+        }
+
+        setup()
+    </script>
+</body>
+
+</html>
