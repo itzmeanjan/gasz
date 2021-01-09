@@ -50,6 +50,10 @@ func Start() {
 		return c.File("assets/gasz.png")
 	})
 
+	handle.GET("/gasz_large.png", func(c echo.Context) error {
+		return c.File("assets/gasz_large.png")
+	})
+
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
 
