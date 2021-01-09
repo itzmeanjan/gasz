@@ -6,6 +6,7 @@ import (
 	"gas-price-notifier/data"
 	"gas-price-notifier/pubsub"
 	"log"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -67,6 +68,7 @@ func Start() {
 			//
 			// They will receive notification as soon as any such criteria gets satisfied
 			subscriptions := make(map[string]*data.PriceSubscription)
+			lock := sync.Mutex{}
 
 			// Unsubscribing from all subscriptions, for this client
 			defer func() {
@@ -83,6 +85,7 @@ func Start() {
 				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
 					log.Printf("[!] Failed to read data from client : %s\n", err.Error())
+					// In case, some error is faced, unlocking critical section here
 					break
 				}
 
@@ -91,12 +94,18 @@ func Start() {
 
 					log.Printf("[!] Invalid payload : %s\n", err.Error())
 
+					// -- Critical section code, starts
+					lock.Lock()
+
 					if err := conn.WriteJSON(&data.ClientResponse{
 						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
 						log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 					}
+
+					lock.Unlock()
+					// -- Critical section code, ends
 
 					break
 
@@ -121,10 +130,16 @@ func Start() {
 							Message: "Already Subscribed",
 						}
 
+						// -- Critical section code, starts
+						lock.Lock()
+
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
+
+						lock.Unlock()
+						// -- Critical section code, ends
 
 						break
 					}
@@ -132,7 +147,7 @@ func Start() {
 					// Creating subscription entry for this client in associative array
 					//
 					// To be used in future when `unsubscription` request to be received
-					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient)
+					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient, &lock)
 
 				case "unsubscription":
 
@@ -146,10 +161,16 @@ func Start() {
 							Message: "Not Subscribed",
 						}
 
+						// -- Critical section code, starts
+						lock.Lock()
+
 						if err := conn.WriteJSON(&resp); err != nil {
 							facedErrorInSwitchCase = true
 							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 						}
+
+						lock.Unlock()
+						// -- Critical section code, ends
 
 						break
 					}
