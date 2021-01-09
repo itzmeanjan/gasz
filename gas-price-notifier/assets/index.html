@@ -29,10 +29,10 @@
                     <i class="dropdown icon"></i>
                     <div class="default text">Fast</div>
                     <div class="menu">
-                        <div class="item" data-value="0">Fast</div>
-                        <div class="item" data-value="1">Fastest</div>
-                        <div class="item" data-value="2">Average</div>
-                        <div class="item" data-value="3">Safe Low</div>
+                        <div class="item" data-value="fast">Fast</div>
+                        <div class="item" data-value="fastest">Fastest</div>
+                        <div class="item" data-value="safeLow">Safe Low</div>
+                        <div class="item" data-value="average">Average</div>
                     </div>
                 </div>
             </div>
@@ -46,22 +46,37 @@
                             <i class="dropdown icon"></i>
                             <div class="default text"><</div>
                             <div class="menu">
-                                <div class="item" data-value="0"><</div>
-                                <div class="item" data-value="1"><=</div>
-                                <div class="item" data-value="2">></div>
-                                <div class="item" data-value="3">>=</div>
-                                <div class="item" data-value="4">==</div>
+                                <div class="item" data-value="<"><</div>
+                                <div class="item" data-value="<="><=</div>
+                                <div class="item" data-value=">">></div>
+                                <div class="item" data-value=">=">>=</div>
+                                <div class="item" data-value="==">==</div>
                             </div>
                         </div>    
                     </div>
                     <div class="field">
-                        <input type="number" name="gasPrice" placeholder="20">
+                        <input type="number" min="1" name="gasPrice" placeholder="30">
                     </div>
                 </div>
             </div>
 
-            <div class="ui button olive" tabindex="0" onclick="{
+            <div class="ui submit button olive" tabindex="0" onclick="{
+
+                const form = $('form');
+
+                const txSpeed = form.form('get value', 'txSpeed');
+                const operator = form.form('get value', 'operator');
+                const gasPrice = form.form('get value', 'gasPrice');
+
+                if (txSpeed === '' || operator === '' || gasPrice === '') {
+                    return
+                }
+
+                console.log(txSpeed, operator, gasPrice);
+
+                $('form').form('clear');
                 $('.page.dimmer:first').dimmer('toggle');
+
             }">
                 Add Gas Price Subscription
             </div>
