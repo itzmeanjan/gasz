@@ -62,31 +62,49 @@
 
             <div class="ui submit button olive" tabindex="0" onclick="{
 
-                const createSubscription = payload => {
+                // Closure for managing ethereum gas price feed subscription/ unsubscription
+                const manageSubscription = payload => {
 
+                    // Checking for existence of globally accessible websocket connection
                     if (typeof GASZ_SOCKET !== 'undefined') {
-                    
+                        
+                        // Sending susbcription/ unsubscription
+                        // request to server
                         GASZ_SOCKET.send(JSON.stringify(payload))
 
+                        // Handling case when message being received from server
                         GASZ_SOCKET.onmessage = e => {
+                            // data received from server
                             const msg = JSON.parse(e.data)
-                    
+                            
+                            // -- Staring to handle subscription/ unsubsciption messages
                             if ('code' in msg){
                                 if(msg['code'] !== 1) {
+                                    if (msg['message'] === 'Already Subscribed') {
 
-                                    $('form').form('clear')
-                                    alert(`${msg['message']}`)
-                                    return
+                                        $('form').form('clear')
+                                        $('.page.dimmer.subscription.failure').dimmer('toggle')
 
+                                    } else {
+                                        $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                    }
+                                } else {
+                                    if (msg['message'].includes('Subscribed')) {
+
+                                        $('form').form('clear')
+                                        $('.page.dimmer.subscription.success').dimmer('toggle')
+
+                                    } else {
+                                        $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                    }
                                 }
-                        
-                                $('form').form('clear')
-                                $('.page.dimmer:first').dimmer('toggle')
+
                                 return
                             }
+                            // -- upto this point
 
                             if (Notification.permission === 'granted') {
-                                const notify = new Notification('Gasz ⚡️', {body: `${msg}`, icon: `http://${window.location.host}/gasz.png`})
+                                const notify = new Notification('Gasz ⚡️', {body: `Gas Price reached ${msg[payload['field']]} Gwei`, icon: `${window.location.protocol}://${window.location.host}/gasz.png`})
                                 
                                 notify.onclick = e => {
                                     if (typeof GASZ_SOCKET !== 'undefined') {
@@ -94,8 +112,6 @@
                                     }
                                 }
                             }
-
-                            console.log(msg)
                         }
 
                     } else {
@@ -120,7 +136,7 @@
                             alert('Can\'t work without Notification !')
                             return
                         } else {
-                            createSubscription({
+                            manageSubscription({
                                 type: 'subscription',
                                 field: txSpeed,
                                 operator,
@@ -129,7 +145,7 @@
                         }
                     })
                 } else {
-                    createSubscription({
+                    manageSubscription({
                         type: 'subscription',
                         field: txSpeed,
                         operator,
@@ -142,11 +158,35 @@
             </div>
         </form>
     </div>
-    <div class="ui page dimmer">
+    <div class="ui page dimmer subscription success" onclick="$('.page.dimmer.subscription.success').dimmer('toggle')">
         <div class="content">
             <h2 class="ui inverted icon header">
                 <i class="thumbs up icon"></i>
-                Gas Price Subscription created
+                Subscription Confirmed 🥳
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer subscription failure" onclick="$('.page.dimmer.subscription.failure').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Already subscribed 😉
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer unsubscription success" onclick="$('.page.dimmer.unsubscription.success').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Unsubscribed 🙂
+            </h2>
+        </div>
+    </div>
+    <div class="ui page dimmer unsubscription failure" onclick="$('.page.dimmer.unsubscription.failure').dimmer('toggle')">
+        <div class="content">
+            <h2 class="ui inverted icon header">
+                <i class="thumbs up icon"></i>
+                Already unsubscribed 🙂
             </h2>
         </div>
     </div>
@@ -157,37 +197,39 @@
                 return
             }
 
-        if (Notification.permission !== 'granted') {
-            Notification.requestPermission().then(p => {
-                if(p !== 'granted') {
-                    alert('Can\'t work without Notification !')
-                    return
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission().then(p => {
+                    if(p !== 'granted') {
+                        alert('`gasz` needs Notification Permission !')
+                        return
+                    } else {
+                        Notification.permission = p
+                    }
+                })
+            }
+
+            if (typeof GASZ_SOCKET === 'undefined') {
+                const socket = new WebSocket(`${window.location.protocol === 'https' ? 'wss' : 'ws'}://${window.location.host}/v1/subscribe`)
+
+                socket.onopen = e => {
+                    console.log('[ `gasz` ] Connection Opened')
+                    window.GASZ_SOCKET = socket
                 }
-            })
-        }
 
-        if (typeof GASZ_SOCKET === 'undefined') {
-            const socket = new WebSocket(`ws://${window.location.host}/v1/subscribe`)
+                socket.onclose = e => {
+                    console.log('[ `gasz` ] Connection Closed')
+                    window.GASZ_SOCKET = null
+                }
 
-            socket.onopen = e => {
-                console.log('Connection Opened')
-                window.GASZ_SOCKET = socket
+                socket.onerror = e => {
+                    console.log('[ `gasz` ] Error in connection')
+                    window.GASZ_SOCKET = null
+                }
             }
 
-            socket.onclose = e => {
-                console.log('Connection Closed')
-                window.GASZ_SOCKET = null
-            }
-
-            socket.onerror = e => {
-                console.log('Error in connection')
-                window.GASZ_SOCKET = null
-            }
+            $('.ui.dropdown').dropdown()
         }
 
-        $('.ui.dropdown').dropdown()
-        }
-        console.log()
         setup()
     </script>
 </body>
