@@ -46,6 +46,10 @@ func Start() {
 		return c.File("assets/favicon.ico")
 	})
 
+	handle.GET("/gasz.png", func(c echo.Context) error {
+		return c.File("assets/gasz.png")
+	})
+
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
 
