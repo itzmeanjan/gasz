@@ -72,35 +72,35 @@
                     return
                 }
 
-                const socket = new WebSocket('ws://localhost:7000/v1/subscribe')
-
-                socket.onopen = e => {
-                    socket.send(JSON.stringify({
+                if (typeof GASZ_SOCKET !== 'undefined') {
+                    
+                    GASZ_SOCKET.send(JSON.stringify({
                         type: 'subscription',
                         field: txSpeed,
                         operator,
                         threshold: parseFloat(gasPrice)
                     }))
-                }
 
-                socket.onmessage = e => {
-                    const msg = JSON.parse(e.data)
+                    GASZ_SOCKET.onmessage = e => {
+                        const msg = JSON.parse(e.data)
                     
-                    if ('code' in msg){
-                        if(msg['code'] !== 1) {
+                        if ('code' in msg){
+                            if(msg['code'] !== 1) {
 
-                            $('form').form('clear')
-                            alert('Failed to subscribe to Gas Price Feed')
-                            return
+                                $('form').form('clear')
+                                alert(`${msg['message']}`)
+                                return
 
-                        }
+                            }
                         
-                        $('form').form('clear')
-                        $('.page.dimmer:first').dimmer('toggle')
-                        return
+                            $('form').form('clear')
+                            $('.page.dimmer:first').dimmer('toggle')
+                            return
+                        }
+
+                        console.log(msg)
                     }
 
-                    console.log(msg)
                 }
 
             }">
@@ -117,6 +117,25 @@
         </div>
     </div>
     <script>
+        if (typeof GASZ_SOCKET === 'undefined') {
+            const socket = new WebSocket('ws://localhost:7000/v1/subscribe')
+
+            socket.onopen = e => {
+                console.log('Connection Opened')
+                window.GASZ_SOCKET = socket
+            }
+
+            socket.onclose = e => {
+                console.log('Connection Closed')
+                window.GASZ_SOCKET = null
+            }
+
+            socket.onerror = e => {
+                console.log('Connection Closed')
+                window.GASZ_SOCKET = null
+            }
+        }
+
         $('.ui.dropdown').dropdown();
     </script>
 </body>
