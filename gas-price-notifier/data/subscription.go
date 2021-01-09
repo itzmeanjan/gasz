@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gas-price-notifier/config"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -22,6 +23,7 @@ type PriceSubscription struct {
 	Request *Payload
 	Redis   *redis.Client
 	PubSub  *redis.PubSub
+	Lock    *sync.Mutex
 }
 
 // Subscribe - Subscribing to Redis pubsub channel
@@ -65,12 +67,17 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				Message: fmt.Sprintf("Subscribed to `%s`", ps.Request),
 			}
 
+			// -- Critical section of code, starts
+			ps.Lock.Lock()
+
 			if err := ps.Client.WriteJSON(&resp); err != nil {
 				facedErrorInSwitchCase = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 
-				break
 			}
+
+			// -- Critical section of code, ends
+			ps.Lock.Unlock()
 
 		case *redis.Message:
 
@@ -91,11 +98,17 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				break
 			}
 
+			// -- Critical section of code, starts
+			ps.Lock.Lock()
+
 			// Attempting to deliver price feed data, which they've subscribed to
 			if err := ps.Client.WriteJSON(&pubsubPayload); err != nil {
 				facedErrorInSwitchCase = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 			}
+
+			// -- Critical section of code, ends
+			ps.Lock.Unlock()
 
 		}
 
@@ -177,6 +190,9 @@ func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
 		Message: fmt.Sprintf("Unsubscribed from `%s`", ps.Request),
 	}
 
+	ps.Lock.Lock()
+	defer ps.Lock.Unlock()
+
 	if err := ps.Client.WriteJSON(&resp); err != nil {
 		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 	}
@@ -188,12 +204,13 @@ func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
 //
 // Whether client will receive notification that depends on whether received price value
 // satisfies criteria set by client
-func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *Payload, redisClient *redis.Client) *PriceSubscription {
+func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *Payload, redisClient *redis.Client, lock *sync.Mutex) *PriceSubscription {
 
 	ps := PriceSubscription{
 		Client:  client,
 		Request: request,
 		Redis:   redisClient,
+		Lock:    lock,
 	}
 
 	// Subscription object to be stored in 👆 struct
