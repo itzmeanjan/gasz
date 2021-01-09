@@ -84,18 +84,30 @@
 
                                         $('form').form('clear')
                                         $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                        }, 1000)
 
                                     } else {
                                         $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                        }, 1000)
                                     }
                                 } else {
                                     if (msg['message'].includes('Subscribed')) {
 
                                         $('form').form('clear')
                                         $('.page.dimmer.subscription.success').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.subscription.success').dimmer('toggle')
+                                        }, 1000)
 
                                     } else {
                                         $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                        setTimeout(_ => {
+                                            $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                        }, 1000)
                                     }
                                 }
 
@@ -104,8 +116,8 @@
                             // -- upto this point
 
                             if (Notification.permission === 'granted') {
-                                const notify = new Notification('Gasz ⚡️', {body: `Gas Price reached ${msg[payload['field']]} Gwei`, icon: `${window.location.protocol}://${window.location.host}/gasz.png`})
-                                
+                                const notify = new Notification('Gasz ⚡️', {body: `Gas Price for ${payload['field'].charAt(0).toUpperCase() + payload['field'].slice(1)} transaction reached ${msg[payload['field']]} Gwei`, icon: 'gasz.png'})
+
                                 notify.onclick = e => {
                                     if (typeof GASZ_SOCKET !== 'undefined') {
                                         GASZ_SOCKET.send(JSON.stringify({...payload, type: 'unsubscription'}))
