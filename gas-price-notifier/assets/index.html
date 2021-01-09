@@ -145,16 +145,16 @@
                 if (Notification.permission !== 'granted') {
                     Notification.requestPermission().then(p => {
                         if(p !== 'granted') {
-                            alert('Can\'t work without Notification !')
+                            alert('`gasz` needs Notification Permission !')
                             return
-                        } else {
-                            manageSubscription({
-                                type: 'subscription',
-                                field: txSpeed,
-                                operator,
-                                threshold: parseFloat(gasPrice)
-                            })
                         }
+
+                        manageSubscription({
+                            type: 'subscription',
+                            field: txSpeed,
+                            operator,
+                            threshold: parseFloat(gasPrice)
+                        })
                     })
                 } else {
                     manageSubscription({
@@ -207,17 +207,6 @@
             if (!('Notification' in window)) {
                 alert('Browser doesn\'t support Notification 🙂')
                 return
-            }
-
-            if (Notification.permission !== 'granted') {
-                Notification.requestPermission().then(p => {
-                    if(p !== 'granted') {
-                        alert('`gasz` needs Notification Permission !')
-                        return
-                    } else {
-                        Notification.permission = p
-                    }
-                })
             }
 
             if (typeof GASZ_SOCKET === 'undefined') {
