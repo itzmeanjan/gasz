@@ -1,6 +1,6 @@
 # gasz
 
-Ethereum Gas Price Notifier @ [gasz.in](gasz.in)
+Ethereum Gas Price Notifier @ [gasz.in](https://gasz.in)
 
 ![banner](sc/banner.gif)
 
@@ -26,7 +26,7 @@ And here's `gasz`.
 
 ![webUI](sc/webUI_1.png)
 
-If you're a normal end user, I'm already running one instance of `gasz` @ [gasz.in](gasz.in), where you can subscribe to receive gas price notification & you'll be notified when Ethereum Mainnet's Gas Price reaches certain threshold.
+If you're a normal end user, I'm already running one instance of `gasz` @ [gasz.in](https://gasz.in), where you can subscribe to receive gas price notification & you'll be notified when Ethereum Mainnet's Gas Price reaches certain threshold.
 
 > Note : **Make sure you allow `gasz.in` to send notification(s)**
 
