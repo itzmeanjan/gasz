@@ -32,7 +32,7 @@ If you're a normal end user, I'm already running one instance of `gasz` @ [gasz.
 
 ---
 
-### Brower Compatibility
+### Browser Compatibility
 
 It has been tested to be working fine on **Firefox** & **Chrome**. For enabling desktop notification on Chrome on MacOS, you'll most probably require to
 
