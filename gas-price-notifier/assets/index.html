@@ -3,7 +3,7 @@
 <html>
 
 <head>
-    <title>gasz : Etereum Gas Price Notifier</title>
+    <title>gasz : Ethereum Gas Price Notifier</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="author" content="Anjan Roy">
     <meta name="description"
@@ -209,7 +209,7 @@
                 return
             }
 
-            if (type(window.SharedWorker) !== 'undefined') {
+            if (typeof window.SharedWorker !== 'undefined') {
 
                 const sharedWorker = new SharedWorker('worker.js')
 
