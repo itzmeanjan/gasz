@@ -209,6 +209,32 @@
                 return
             }
 
+            if ('serviceWorker' in navigator) {
+
+                navigator.serviceWorker.register('worker.js', {scope: './'})
+                    .then(reg => {
+
+                        var serviceWorker;
+                        if (registration.installing) {
+                            serviceWorker = registration.installing;
+                        } else if (registration.waiting) {
+                            serviceWorker = registration.waiting;
+                        } else if (registration.active) {
+                            serviceWorker = registration.active;
+                        }
+                        
+                        if (serviceWorker) {
+                            serviceWorker.addEventListener('statechange', function (e) {
+                                console.log(e)
+                            });
+                        }
+
+                    }).catch (e => {
+                        console.error(e)
+                    })
+
+            }
+
             if (typeof window.SharedWorker !== 'undefined') {
 
                 const sharedWorker = new SharedWorker('worker.js')

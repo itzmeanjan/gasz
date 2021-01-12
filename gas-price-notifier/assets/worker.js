@@ -1,31 +1,24 @@
-const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/v1/subscribe`)
+let socket
 
-socket.onopen = _ => {
-    console.log('[ `gasz` ] Connection Opened')
-}
+this.addEventListener('install', e => {
+    console.log('Install : ', e)
+})
 
-socket.onclose = _ => {
-    console.log('[ `gasz` ] Connection Closed')
-}
+this.addEventListener('activate', e => {
+    console.log('Activate : ', e)
 
-socket.onerror = _ => {
-    console.log('[ `gasz` ] Error in connection')
-    socket.close()
-}
+    socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
-this.addEventListener('connect', e => {
+    socket.onopen = _ => {
+        console.log('[ `gasz` ] Connection Opened')
+    }
     
-    const port = e.ports[0]
-
-    console.log(`New connection`)
+    socket.onclose = _ => {
+        console.log('[ `gasz` ] Connection Closed')
+    }
     
-    port.addEventListener('message', m => {
-
-        console.log(`Received : ${m.data}`)
-
-        port.postMessage(socket.readyState)
-    })
-
-    port.start()
-
+    socket.onerror = _ => {
+        console.log('[ `gasz` ] Error in connection')
+        socket.close()
+    }
 })
