@@ -20,6 +20,9 @@ this.addEventListener('connect', e => {
     console.log(`New connection`)
     
     port.addEventListener('message', m => {
+
+        console.log(`Received : ${m.data}`)
+
         port.postMessage(socket.readyState)
     })
 

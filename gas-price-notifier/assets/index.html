@@ -209,6 +209,28 @@
                 return
             }
 
+            if (type(window.SharedWorker) !== 'undefined') {
+
+                const sharedWorker = new SharedWorker('worker.js')
+
+                sharedWorker.port.onmessage = m => {
+                    console.log(m.data)
+                }
+
+                sharedWorker.onerror = e => {
+                    console.error(e)
+
+                    sharedWorker.port.close()
+                }
+
+                sharedWorker.port.start()
+
+                setInterval(() => {
+                    sharedWorker.port.postMessage('hello')
+                }, 2000);
+
+            }
+
             if (typeof GASZ_SOCKET === 'undefined') {
                 const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/v1/subscribe`)
 
