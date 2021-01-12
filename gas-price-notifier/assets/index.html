@@ -130,6 +130,10 @@
                         alert('Failed to connect to server !')
                     }
 
+                    if (typeof Service_Worker !== 'undefined') {
+                        Service_Worker.postMessage(JSON.stringify(payload))
+                    }
+
                 }
 
                 const form = $('form')
@@ -218,41 +222,13 @@
                         if (serviceWorker) {
 
                             navigator.serviceWorker.addEventListener('message', m => {
-                                console.log(`Received from service worker : '${m.data}', ${typeof m.data}`)
-
-                                setTimeout(_ => { reg.active.postMessage(Math.random()) }, 2000)
+                                console.log(`Received from service worker : '${m.data}'`)
                             })
 
-                            navigator.serviceWorker.ready.then(reg => {
-                                reg.active.postMessage('Staring communication')
-                            })
+                            navigator.serviceWorker.ready.then(reg => { window.Service_Worker = reg.active })
 
                         }
-                    }).catch (e => {
-                        console.error(e)
-                    })
-
-            }
-
-            if (typeof window.SharedWorker !== 'undefined') {
-
-                const sharedWorker = new SharedWorker('worker.js')
-
-                sharedWorker.port.onmessage = m => {
-                    console.log(m.data)
-                }
-
-                sharedWorker.onerror = e => {
-                    console.error(e)
-
-                    sharedWorker.port.close()
-                }
-
-                sharedWorker.port.start()
-
-                setInterval(() => {
-                    sharedWorker.port.postMessage('hello')
-                }, 2000);
+                    }).catch(console.error)
 
             }
 
