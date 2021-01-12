@@ -220,11 +220,11 @@
                             navigator.serviceWorker.addEventListener('message', m => {
                                 console.log(`Received from service worker : '${m.data}', ${typeof m.data}`)
 
-                                setTimeout(_ => { registration.active.postMessage(Math.random()) }, 2000)
+                                setTimeout(_ => { reg.active.postMessage(Math.random()) }, 2000)
                             })
 
-                            navigator.serviceWorker.ready.then(registration => {
-                                registration.active.postMessage('Staring communication')
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.active.postMessage('Staring communication')
                             })
 
                         }
