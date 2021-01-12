@@ -212,7 +212,7 @@
             if ('serviceWorker' in navigator) {
 
                 navigator.serviceWorker.register('worker.js', {scope: './'})
-                    .then(reg => {
+                    .then(registration => {
 
                         var serviceWorker;
                         if (registration.installing) {
@@ -227,6 +227,12 @@
                             serviceWorker.addEventListener('statechange', function (e) {
                                 console.log(e)
                             });
+
+                            serviceWorker.addEventListener('message', m => {
+                                console.log(`Received from service worker : ${m.data}`)
+                            })
+
+                            registration.active.postMessage('Hello')
                         }
 
                     }).catch (e => {

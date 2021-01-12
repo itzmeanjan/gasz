@@ -22,3 +22,9 @@ this.addEventListener('activate', e => {
         socket.close()
     }
 })
+
+this.addEventListener('message', m => {
+    console.log(`Received from client : ${m.data}`)
+
+    m.source.postMessage(Math.random())
+})
