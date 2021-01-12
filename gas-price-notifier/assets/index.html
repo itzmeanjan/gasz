@@ -212,27 +212,42 @@
             if ('serviceWorker' in navigator) {
 
                 navigator.serviceWorker.register('worker.js', {scope: './'})
-                    .then(registration => {
+                    .then(reg => {
 
-                        var serviceWorker;
-                        if (registration.installing) {
-                            serviceWorker = registration.installing;
-                        } else if (registration.waiting) {
-                            serviceWorker = registration.waiting;
+                        let serviceWorker
+                        
+                        if (reg.installing) {
+                        
+                            serviceWorker = reg.installing
+                        
+                        } else if (reg.waiting) {
+                            
+                            serviceWorker = reg.waiting
+                        
                         } else if (registration.active) {
-                            serviceWorker = registration.active;
+
+                            serviceWorker = reg.active
+                        
                         }
                         
                         if (serviceWorker) {
-                            serviceWorker.addEventListener('statechange', function (e) {
-                                console.log(e)
-                            });
-
-                            serviceWorker.addEventListener('message', m => {
-                                console.log(`Received from service worker : ${m.data}`)
+                            serviceWorker.addEventListener('statechange', e => {
+                                
+                                if (e.currentTarget.state === 'activated') {
+                                    registration.active.postMessage('Hello')
+                                }
                             })
 
-                            registration.active.postMessage('Hello')
+                            navigator.serviceWorker.addEventListener('message', m => {
+                                console.log(`Received from service worker : ${m.data}`)
+
+                                setTimeout(_ => {registration.active.postMessage(Math.random())}, 2000)
+                            })
+
+                            navigator.serviceWorker.ready.then(registration => {
+                                registration.active.postMessage('Hello')
+                            })
+
                         }
 
                     }).catch (e => {

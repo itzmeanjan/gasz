@@ -1,11 +1,6 @@
 let socket
 
-this.addEventListener('install', e => {
-    console.log('Install : ', e)
-})
-
-this.addEventListener('activate', e => {
-    console.log('Activate : ', e)
+this.addEventListener('activate', _ => {
 
     socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
@@ -21,10 +16,11 @@ this.addEventListener('activate', e => {
         console.log('[ `gasz` ] Error in connection')
         socket.close()
     }
+
 })
 
 this.addEventListener('message', m => {
     console.log(`Received from client : ${m.data}`)
 
-    m.source.postMessage(Math.random())
+    m.source.postMessage(m.data)
 })
