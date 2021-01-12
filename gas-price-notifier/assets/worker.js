@@ -20,7 +20,7 @@ this.addEventListener('activate', _ => {
 })
 
 this.addEventListener('message', m => {
-    console.log(`Received from client : ${m.data}`)
+    console.log(`Received from client : '${m.data}', ${typeof m.data}`)
 
     m.source.postMessage(m.data)
 })

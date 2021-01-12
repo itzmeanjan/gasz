@@ -213,43 +213,21 @@
 
                 navigator.serviceWorker.register('worker.js', {scope: './'})
                     .then(reg => {
-
-                        let serviceWorker
-                        
-                        if (reg.installing) {
-                        
-                            serviceWorker = reg.installing
-                        
-                        } else if (reg.waiting) {
-                            
-                            serviceWorker = reg.waiting
-                        
-                        } else if (registration.active) {
-
-                            serviceWorker = reg.active
-                        
-                        }
+                        let serviceWorker = reg.installing ? reg.installing : (reg.waiting ? reg.waiting : (reg.active ? reg.active : null))
                         
                         if (serviceWorker) {
-                            serviceWorker.addEventListener('statechange', e => {
-                                
-                                if (e.currentTarget.state === 'activated') {
-                                    registration.active.postMessage('Hello')
-                                }
-                            })
 
                             navigator.serviceWorker.addEventListener('message', m => {
-                                console.log(`Received from service worker : ${m.data}`)
+                                console.log(`Received from service worker : '${m.data}', ${typeof m.data}`)
 
-                                setTimeout(_ => {registration.active.postMessage(Math.random())}, 2000)
+                                setTimeout(_ => { registration.active.postMessage(Math.random()) }, 2000)
                             })
 
                             navigator.serviceWorker.ready.then(registration => {
-                                registration.active.postMessage('Hello')
+                                registration.active.postMessage('Staring communication')
                             })
 
                         }
-
                     }).catch (e => {
                         console.error(e)
                     })
