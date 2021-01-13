@@ -63,7 +63,7 @@
             <div class="ui submit button olive" tabindex="0" onclick="{
 
                 // Closure for managing ethereum gas price feed subscription/ unsubscription
-                const manageSubscription = payload => {
+                /* const manageSubscription = payload => {
 
                     // Checking for existence of globally accessible websocket connection
                     if (typeof GASZ_SOCKET !== 'undefined') {
@@ -134,7 +134,7 @@
                         Service_Worker.postMessage(JSON.stringify(payload))
                     }
 
-                }
+                } */
 
                 const form = $('form')
 
@@ -153,20 +153,28 @@
                             return
                         }
 
-                        manageSubscription({
-                            type: 'subscription',
-                            field: txSpeed,
-                            operator,
-                            threshold: parseFloat(gasPrice)
-                        })
+                        if (typeof Service_Worker !== 'undefined') {
+
+                            Service_Worker.postMessage(JSON.stringify({
+                                type: 'subscription',
+                                field: txSpeed,
+                                operator,
+                                threshold: parseFloat(gasPrice)
+                            }))
+
+                        }
                     })
-                } else {
-                    manageSubscription({
+                }
+
+                if (typeof Service_Worker !== 'undefined') {
+
+                    Service_Worker.postMessage(JSON.stringify({
                         type: 'subscription',
                         field: txSpeed,
                         operator,
                         threshold: parseFloat(gasPrice)
-                    })
+                    }))
+
                 }
 
             }">
@@ -230,25 +238,6 @@
                         }
                     }).catch(console.error)
 
-            }
-
-            if (typeof GASZ_SOCKET === 'undefined') {
-                const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/v1/subscribe`)
-
-                socket.onopen = e => {
-                    console.log('[ `gasz` ] Connection Opened')
-                    window.GASZ_SOCKET = socket
-                }
-
-                socket.onclose = e => {
-                    console.log('[ `gasz` ] Connection Closed')
-                    window.GASZ_SOCKET = null
-                }
-
-                socket.onerror = e => {
-                    console.log('[ `gasz` ] Error in connection')
-                    window.GASZ_SOCKET = null
-                }
             }
 
             $('.ui.dropdown').dropdown()

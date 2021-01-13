@@ -36,23 +36,23 @@ const createWebsocketConnection = _ => {
             if (msg['code'] !== 1) {
                 if (msg['message'] === 'Already Subscribed') {
 
-                    self.clients.matchAll().then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure subscription ]' }));
                     })
 
                 } else {
-                    self.clients.matchAll().then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure unsubscription ]' }));
                     })
                 }
             } else {
                 if (msg['message'].includes('Subscribed')) {
-                    self.clients.matchAll().then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success subscription ]' }));
                     })
                 } else {
-                    self.clients.matchAll().then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success unsubscription ]' }));
                     })
                 }
             }
@@ -61,7 +61,7 @@ const createWebsocketConnection = _ => {
         }
         // -- upto this point
 
-        this.registration.showNotification('Gasz ⚡️', { body: `${m.data}`, icon: 'gasz.png' })
+        this.registration.showNotification('Gasz ⚡️', { body: `${msg}`, icon: 'gasz.png' })
     }
 
 }
@@ -79,4 +79,9 @@ this.addEventListener('message', m => {
     createWebsocketConnection()
 
     socket.send(JSON.stringify(m.data))
+})
+
+this.addEventListener('notificationclick', e => {
+    console.log('On notification click: ', e.notification.tag)
+    e.notification.close()
 })
