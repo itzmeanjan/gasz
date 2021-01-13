@@ -4,65 +4,79 @@ let socket
 // for managing gas price subscriptions
 const createWebsocketConnection = _ => {
 
-    if(socket && socket.readyState === socket.OPEN) {
-        return socket
+    if (socket && socket.readyState === socket.OPEN) {
+        return
     }
 
     socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
+    // websocket connection is open now
     socket.onopen = _ => {
         console.log('[ `gasz` ] Connection Opened')
     }
-    
+
+    // connection with backend got closed
     socket.onclose = _ => {
         console.log('[ `gasz` ] Connection Closed')
     }
-    
+
+    // due to some error encountered, closing connection with backend
     socket.onerror = _ => {
         console.log('[ `gasz` ] Error in connection')
         socket.close()
     }
 
-    return socket
-
-}
-
-this.addEventListener('activate', _ => {
-
-    
-
     // Handling case when message being received from server
     socket.onmessage = e => {
         // data received from server
         const msg = JSON.parse(e.data)
-        
+
         // -- Staring to handle subscription/ unsubsciption messages
-        if ('code' in msg){
-            if(msg['code'] !== 1) {
-                if (msg['message'] === 'Already Subscribed') { } else { }
+        if ('code' in msg) {
+            if (msg['code'] !== 1) {
+                if (msg['message'] === 'Already Subscribed') {
+
+                    self.clients.matchAll().then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    })
+
+                } else {
+                    self.clients.matchAll().then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    })
+                }
             } else {
-                if (msg['message'].includes('Subscribed')) { } else { }
+                if (msg['message'].includes('Subscribed')) {
+                    self.clients.matchAll().then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    })
+                } else {
+                    self.clients.matchAll().then(clients => {
+                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW' }));
+                    })
+                }
             }
 
             return
         }
         // -- upto this point
 
-        if (Notification.permission === 'granted') {
-            const notify = new Notification('Gasz ⚡️', {body: `Body`, icon: 'gasz.png'})
-
-            notify.onclick = _ => {
-                notify.close()
-            }
-        }
+        this.registration.showNotification('Gasz ⚡️', { body: `${m.data}`, icon: 'gasz.png' })
     }
+
+}
+
+this.addEventListener('activate', _ => {
+
+    // Checking whether already connected via websocket or not
+    //
+    // if not, new connection will be created
+    createWebsocketConnection()
 
 })
 
 this.addEventListener('message', m => {
-    console.log(`Received from client : '${m.data}'`)
+    createWebsocketConnection()
 
-    this.registration.showNotification('Gasz ⚡️', {body: `${m.data}`, icon: 'gasz.png'})
-
-    m.source.postMessage(m.data)
+    socket.send(JSON.stringify(m.data))
 })
