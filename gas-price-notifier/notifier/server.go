@@ -6,6 +6,7 @@ import (
 	"gas-price-notifier/data"
 	"gas-price-notifier/pubsub"
 	"log"
+	"net/http"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -13,11 +14,15 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// Start - ...
+// Start - Manages whole lifecycle of backend application
 func Start() {
 
 	redisClient := pubsub.Connect()
 	defer redisClient.Close()
+
+	connCount := data.SafeActiveConnections{
+		Lock:        &sync.RWMutex{},
+		Connections: &data.ActiveConnections{Count: 0}}
 
 	handle := echo.New()
 
@@ -54,10 +59,27 @@ func Start() {
 		return c.File("assets/gasz_large.png")
 	})
 
+	handle.GET("/worker.js", func(c echo.Context) error {
+		return c.File("assets/worker.js")
+	})
+
 	v1 := handle.Group("/v1")
 	upgrader := websocket.Upgrader{}
 
 	{
+
+		v1.GET("/stat", func(c echo.Context) error {
+
+			connCount.Lock.RLock()
+			defer connCount.Lock.RUnlock()
+
+			return c.JSON(http.StatusOK, struct {
+				Active uint64 `json:"active"`
+			}{
+				Active: connCount.Connections.Count,
+			})
+		})
+
 		v1.GET("/subscribe", func(c echo.Context) error {
 
 			conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -65,6 +87,12 @@ func Start() {
 				log.Printf("[!] Failed to upgrade request : %s\n", err.Error())
 				return nil
 			}
+
+			// Incrementing number of active connections
+			connCount.Increment(1)
+			// Decrementing number of active connections
+			// because this clientn just got disconnected
+			defer connCount.Decrement(1)
 
 			// Scheduling graceful connection closing, to be invoked when
 			// getting out of this function's scope

@@ -102,7 +102,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			ps.Lock.Lock()
 
 			// Attempting to deliver price feed data, which they've subscribed to
-			if err := ps.Client.WriteJSON(&pubsubPayload); err != nil {
+			if err := ps.Client.WriteJSON(ps.GetClientResponse(&pubsubPayload)); err != nil {
 				facedErrorInSwitchCase = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
 			}
@@ -173,6 +173,32 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool 
 	}
 
 	return status
+
+}
+
+// GetClientResponse - Returns gas price response to be sent to client,
+// when gas price reaches certain value, which satisfies client set criteria
+func (ps *PriceSubscription) GetClientResponse(payload *PubSubPayload) *GasPriceFeed {
+
+	var gasPrice GasPriceFeed
+
+	switch ps.Request.Field {
+
+	case "fast":
+		gasPrice.Price = payload.Fast
+	case "fastest":
+		gasPrice.Price = payload.Fastest
+	case "safeLow":
+		gasPrice.Price = payload.SafeLow
+	case "average":
+		gasPrice.Price = payload.Average
+
+	}
+
+	gasPrice.TxType = ps.Request.Field
+	gasPrice.Topic = ps.Request.String()
+
+	return &gasPrice
 
 }
 

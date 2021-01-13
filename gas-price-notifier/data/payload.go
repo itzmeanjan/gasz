@@ -48,3 +48,14 @@ type PubSubPayload struct {
 	SafeLow float64 `json:"safeLow"`
 	Average float64 `json:"average"`
 }
+
+// GasPriceFeed - Client will receive gas price feed in 👇
+// form i.e. when gas price of subscribed category reaches
+// threshold specified, it'll sent to client
+//
+// Data of following form will help browser client in showing notification easily
+type GasPriceFeed struct {
+	TxType string  `json:"txType"`
+	Price  float64 `json:"price"`
+	Topic  string  `json:"topic"`
+}
