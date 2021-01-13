@@ -78,20 +78,50 @@ this.addEventListener('message', m => {
     createWebsocketConnection()
         .then(v => {
             console.log(v)
+            socket.send(m.data)
 
             // Keeping track of which topic this client is subscribed to
-            subscriptions[`${m.data['field']} : ${m.data['operator']} ${m.data['threshold']}`] = JSON.parse(m.data)
-
-            socket.send(m.data)
+            const parsed = JSON.parse(m.data)
+            subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
         })
         .catch(console.error)
 })
 
 this.addEventListener('notificationclick', e => {
 
-    if (subscriptions[e.notification.tag]) {
-        socket.send(JSON.stringify({ ...subscriptions[e.notification.tag], type: 'unsubscription' }))
-    }
+    // Parsing tag obtained from notification which was shown
+    // and user just clicked on
+    const parsedTag = parseSubscriptionTopic(e.notification.tag)
+
+    // Finding out which entry(-ies) in subscription table
+    // is/ are concerned with this topic for which user just
+    // received notification from server & also clicked on it,
+    // we're going to simply unsubscribe from
+    Object.entries(subscriptions)
+        .map(([k, v]) => [parseSubscriptionTopic(k), v])
+        .filter(([_, v]) => checkEqualityOfTopics(parsedTag, v))
+        .forEach(([_, v]) => {
+
+            socket.send(JSON.stringify({
+                ...v,
+                type: 'unsubscription'
+            }))
+
+        })
+
     e.notification.close()
 
 })
+
+// Parsing content of topic identifier string into structured content
+const parseSubscriptionTopic = tag => {
+    const [field, criteria] = tag.split(':').map(v => v.trim())
+    const [operator, threshold] = criteria.split(' ')
+
+    return { field, operator, threshold: parseFloat(threshold) }
+}
+
+// Checking equality of two structured topic data
+const checkEqualityOfTopics = (topic1, topic2) => {
+    return topic1['field'] === topic2['field'] && topic1['operator'] === topic2['operator'] && topic1['threshold'] === topic2['threshold']
+}
