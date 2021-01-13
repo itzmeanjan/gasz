@@ -55,7 +55,13 @@ const createWebsocketConnection = _ => {
                 icon: 'gasz.png',
                 tag: msg['topic'],
                 requireInteraction: true,
-                vibrate: [200, 100, 200]
+                vibrate: [200, 100, 200],
+                actions: [
+                    {
+                        action: 'unsubscribe',
+                        title: 'Unsubscribe'
+                    }
+                ]
             })
         }
 
@@ -88,6 +94,10 @@ this.addEventListener('message', m => {
 })
 
 this.addEventListener('notificationclick', e => {
+
+    if (e.action !== 'unsubscribe') {
+        return
+    }
 
     // Parsing tag obtained from notification which was shown
     // and user just clicked on
