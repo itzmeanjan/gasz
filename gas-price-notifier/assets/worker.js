@@ -1,6 +1,12 @@
 let socket
 
-this.addEventListener('activate', _ => {
+// Opens a new websocket connection to backend
+// for managing gas price subscriptions
+const createWebsocketConnection = _ => {
+
+    if(socket && socket.readyState === socket.OPEN) {
+        return socket
+    }
 
     socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
@@ -16,6 +22,14 @@ this.addEventListener('activate', _ => {
         console.log('[ `gasz` ] Error in connection')
         socket.close()
     }
+
+    return socket
+
+}
+
+this.addEventListener('activate', _ => {
+
+    
 
     // Handling case when message being received from server
     socket.onmessage = e => {
