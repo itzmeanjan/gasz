@@ -1,4 +1,5 @@
 let socket
+let subscriptions = []
 
 // Opens a new websocket connection to backend
 // for managing gas price subscriptions
@@ -30,28 +31,29 @@ const createWebsocketConnection = _ => {
     socket.onmessage = e => {
         // data received from server
         const msg = JSON.parse(e.data)
+        console.log(msg)
 
-        // -- Staring to handle subscription/ unsubsciption messages
+        // -- Starting to handle subscription/ unsubsciption messages
         if ('code' in msg) {
             if (msg['code'] !== 1) {
                 if (msg['message'] === 'Already Subscribed') {
 
-                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                         clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure subscription ]' }));
                     })
 
                 } else {
-                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                         clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure unsubscription ]' }));
                     })
                 }
             } else {
                 if (msg['message'].includes('Subscribed')) {
-                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                         clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success subscription ]' }));
                     })
                 } else {
-                    self.clients.matchAll({ type: 'window' }).then(clients => {
+                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                         clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success unsubscription ]' }));
                     })
                 }
@@ -78,10 +80,16 @@ this.addEventListener('activate', _ => {
 this.addEventListener('message', m => {
     createWebsocketConnection()
 
-    socket.send(JSON.stringify(m.data))
+    // keeping track of which topic this client is subscribed to
+    subscriptions.push(JSON.parse(m.data))
+
+    socket.send(m.data)
 })
 
 this.addEventListener('notificationclick', e => {
-    console.log('On notification click: ', e.notification.tag)
+    if (subscriptions.length > 0) {
+        socket.send(JSON.stringify({ ...subscriptions[0], type: 'unsubscription' }))
+    }
+
     e.notification.close()
 })
