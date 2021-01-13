@@ -5,45 +5,57 @@ let subscriptions = []
 // for managing gas price subscriptions
 const createWebsocketConnection = _ => {
 
-    if (socket && socket.readyState === socket.OPEN) {
-        return
-    }
+    const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
+    const connOpen = '[ `gasz` ] Connection Opened'
+    const connClosed = '[ `gasz` ] Connection Closed'
+    const connError = '[ `gasz` ] Error in connection'
 
-    socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+    return new Promise((res, rej) => {
 
-    // websocket connection is open now
-    socket.onopen = _ => {
-        console.log('[ `gasz` ] Connection Opened')
-    }
-
-    // connection with backend got closed
-    socket.onclose = _ => {
-        console.log('[ `gasz` ] Connection Closed')
-    }
-
-    // due to some error encountered, closing connection with backend
-    socket.onerror = _ => {
-        console.log('[ `gasz` ] Error in connection')
-        socket.close()
-    }
-
-    // Handling case when message being received from server
-    socket.onmessage = e => {
-        // data received from server
-        const msg = JSON.parse(e.data)
-
-        // -- Starting to handle subscription/ unsubsciption messages
-        if ('code' in msg) {
-            self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-            })
-
-            return
+        if (socket && socket.readyState === socket.OPEN) {
+            return res(connAlreadyOpen)
         }
-        // -- upto this point
 
-        this.registration.showNotification('Gasz ⚡️', { body: `${msg}`, icon: 'gasz.png' })
-    }
+        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+
+        // websocket connection is open now
+        socket.onopen = _ => {
+            return res(connOpen)
+        }
+
+        // connection with backend got closed
+        socket.onclose = _ => {
+            return rej(connClosed)
+        }
+
+        // due to some error encountered, closing connection with backend
+        socket.onerror = _ => {
+            socket.close()
+
+            return rej(connError)
+        }
+
+        // Handling case when message being received from server
+        socket.onmessage = e => {
+            // data received from server
+            const msg = JSON.parse(e.data)
+
+            console.log(msg)
+
+            // -- Starting to handle subscription/ unsubsciption messages
+            if ('code' in msg) {
+                self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+                })
+
+                return
+            }
+            // -- upto this point
+
+            this.registration.showNotification('Gasz ⚡️', { body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`, icon: 'gasz.png' })
+        }
+
+    })
 
 }
 
@@ -53,16 +65,21 @@ this.addEventListener('activate', _ => {
     //
     // if not, new connection will be created
     createWebsocketConnection()
+        .then(console.log)
+        .catch(console.error)
 
 })
 
 this.addEventListener('message', m => {
     createWebsocketConnection()
+        .then(v => {
+            console.log(v)
 
-    // keeping track of which topic this client is subscribed to
-    subscriptions.push(JSON.parse(m.data))
-
-    socket.send(m.data)
+            // Keeping track of which topic this client is subscribed to
+            subscriptions.push(JSON.parse(m.data))
+            socket.send(m.data)
+        })
+        .catch(console.error)
 })
 
 this.addEventListener('notificationclick', e => {
