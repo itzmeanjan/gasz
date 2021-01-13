@@ -62,80 +62,6 @@
 
             <div class="ui submit button olive" tabindex="0" onclick="{
 
-                // Closure for managing ethereum gas price feed subscription/ unsubscription
-                /* const manageSubscription = payload => {
-
-                    // Checking for existence of globally accessible websocket connection
-                    if (typeof GASZ_SOCKET !== 'undefined') {
-                        
-                        // Sending susbcription/ unsubscription
-                        // request to server
-                        GASZ_SOCKET.send(JSON.stringify(payload))
-
-                        // Handling case when message being received from server
-                        GASZ_SOCKET.onmessage = e => {
-                            // data received from server
-                            const msg = JSON.parse(e.data)
-                            
-                            // -- Staring to handle subscription/ unsubsciption messages
-                            if ('code' in msg){
-                                if(msg['code'] !== 1) {
-                                    if (msg['message'] === 'Already Subscribed') {
-
-                                        $('form').form('clear')
-                                        $('.page.dimmer.subscription.failure').dimmer('toggle')
-                                        setTimeout(_ => {
-                                            $('.page.dimmer.subscription.failure').dimmer('toggle')
-                                        }, 1000)
-
-                                    } else {
-                                        $('.page.dimmer.unsubscription.failure').dimmer('toggle')
-                                        setTimeout(_ => {
-                                            $('.page.dimmer.unsubscription.failure').dimmer('toggle')
-                                        }, 1000)
-                                    }
-                                } else {
-                                    if (msg['message'].includes('Subscribed')) {
-
-                                        $('form').form('clear')
-                                        $('.page.dimmer.subscription.success').dimmer('toggle')
-                                        setTimeout(_ => {
-                                            $('.page.dimmer.subscription.success').dimmer('toggle')
-                                        }, 1000)
-
-                                    } else {
-                                        $('.page.dimmer.unsubscription.success').dimmer('toggle')
-                                        setTimeout(_ => {
-                                            $('.page.dimmer.unsubscription.success').dimmer('toggle')
-                                        }, 1000)
-                                    }
-                                }
-
-                                return
-                            }
-                            // -- upto this point
-
-                            if (Notification.permission === 'granted') {
-                                const notify = new Notification('Gasz ⚡️', {body: `Gas Price for ${payload['field'].charAt(0).toUpperCase() + payload['field'].slice(1)} transaction reached ${msg[payload['field']]} Gwei`, icon: 'gasz.png'})
-
-                                notify.onclick = e => {
-                                    if (typeof GASZ_SOCKET !== 'undefined') {
-                                        GASZ_SOCKET.send(JSON.stringify({...payload, type: 'unsubscription'}))
-                                    }
-                                }
-                            }
-                        }
-
-                    } else {
-                        alert('Failed to connect to server !')
-                    }
-
-                    if (typeof Service_Worker !== 'undefined') {
-                        Service_Worker.postMessage(JSON.stringify(payload))
-                    }
-
-                } */
-
                 const form = $('form')
 
                 const txSpeed = form.form('get value', 'txSpeed')
@@ -230,7 +156,44 @@
                         if (serviceWorker) {
 
                             navigator.serviceWorker.addEventListener('message', m => {
-                                console.log(`Received from service worker : '${m.data}'`)
+                                
+                                const msg = JSON.parse(m.data)
+                            
+                                // -- Staring to handle subscription/ unsubsciption messages
+                                if ('code' in msg){
+                                    if(msg['code'] !== 1) {
+                                        if (msg['message'] === 'Already Subscribed') {
+
+                                            $('form').form('clear')
+                                            $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                            setTimeout(_ => {
+                                                $('.page.dimmer.subscription.failure').dimmer('toggle')
+                                            }, 500)
+
+                                        } else {
+                                            $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                            setTimeout(_ => {
+                                            $('.page.dimmer.unsubscription.failure').dimmer('toggle')
+                                            }, 500)
+                                        }
+                                    } else {
+                                        if (msg['message'].includes('Subscribed')) {
+
+                                            $('form').form('clear')
+                                            $('.page.dimmer.subscription.success').dimmer('toggle')
+                                            setTimeout(_ => {
+                                                $('.page.dimmer.subscription.success').dimmer('toggle')
+                                            }, 500)
+
+                                        } else {
+                                            $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                            setTimeout(_ => {
+                                                $('.page.dimmer.unsubscription.success').dimmer('toggle')
+                                            }, 500)
+                                        }
+                                    }
+                                }
+
                             })
 
                             navigator.serviceWorker.ready.then(reg => { window.Service_Worker = reg.active })

@@ -31,33 +31,12 @@ const createWebsocketConnection = _ => {
     socket.onmessage = e => {
         // data received from server
         const msg = JSON.parse(e.data)
-        console.log(msg)
 
         // -- Starting to handle subscription/ unsubsciption messages
         if ('code' in msg) {
-            if (msg['code'] !== 1) {
-                if (msg['message'] === 'Already Subscribed') {
-
-                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure subscription ]' }));
-                    })
-
-                } else {
-                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ failure unsubscription ]' }));
-                    })
-                }
-            } else {
-                if (msg['message'].includes('Subscribed')) {
-                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success subscription ]' }));
-                    })
-                } else {
-                    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                        clients.forEach(client => client.postMessage({ msg: 'Hello from SW [ success unsubscription ]' }));
-                    })
-                }
-            }
+            self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+            })
 
             return
         }
