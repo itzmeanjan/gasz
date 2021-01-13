@@ -42,7 +42,7 @@ const createWebsocketConnection = _ => {
 
             // -- Starting to handle subscription/ unsubsciption messages
             if ('code' in msg) {
-                self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                     clients.forEach(client => client.postMessage(JSON.stringify(msg)))
                 })
 
@@ -93,7 +93,23 @@ this.addEventListener('message', m => {
         .catch(console.error)
 })
 
-this.addEventListener('notificationclick', e => {
+this.addEventListener('notificationclick', async e => {
+
+    e.waitUntil(
+        this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+
+            for (const client of clients) {
+                if (!client.focused && 'focus' in client) {
+                    return client.focus()
+                }
+            }
+
+            if (this.clients.openWindow) {
+                return this.clients.openWindow('/')
+            }
+
+        })
+    )
 
     if (e.action !== 'unsubscribe') {
         return
