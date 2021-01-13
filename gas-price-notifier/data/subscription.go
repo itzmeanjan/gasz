@@ -176,6 +176,33 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool 
 
 }
 
+// GetClientResponse - Returns gas price response to be sent to client,
+// when gas price reaches certain value, which satisfies client set criteria
+func (ps *PriceSubscription) GetClientResponse(payload *PubSubPayload) *GasPriceFeed {
+
+	var gasPrice GasPriceFeed
+
+	switch t := ps.Request.Field; t {
+
+	case "fast":
+		gasPrice.Price = payload.Fast
+		gasPrice.TxType = t
+	case "fastest":
+		gasPrice.Price = payload.Fastest
+		gasPrice.TxType = t
+	case "safeLow":
+		gasPrice.Price = payload.SafeLow
+		gasPrice.TxType = t
+	case "average":
+		gasPrice.Price = payload.Average
+		gasPrice.TxType = t
+
+	}
+
+	return &gasPrice
+
+}
+
 // Unsubscribe - Cancelling price feed subscription for specific user
 // and letting client know about it
 func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {

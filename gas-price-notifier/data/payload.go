@@ -55,6 +55,6 @@ type PubSubPayload struct {
 //
 // Data of following form will help browser client in showing notification easily
 type GasPriceFeed struct {
-	TxType string
-	Price  float64
+	TxType string  `json:"txType"`
+	Price  float64 `json:"price"`
 }
