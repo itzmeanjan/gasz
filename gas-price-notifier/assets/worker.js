@@ -53,7 +53,6 @@ const createWebsocketConnection = _ => {
             this.registration.showNotification('Gasz ⚡️', {
                 body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
                 icon: 'gasz.png',
-                badge: 'gasz.png',
                 tag: msg['topic'],
                 requireInteraction: true,
                 vibrate: [200, 100, 200]
@@ -90,11 +89,9 @@ this.addEventListener('message', m => {
 
 this.addEventListener('notificationclick', e => {
 
-    console.log(e.data)
-
-    if (subscriptions.length > 0) {
-        socket.send(JSON.stringify({ ...subscriptions[0], type: 'unsubscription' }))
+    if (subscriptions[e.notification.tag]) {
+        socket.send(JSON.stringify({ ...subscriptions[e.notification.tag], type: 'unsubscription' }))
     }
-
     e.notification.close()
+
 })
