@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// Start - ...
+// Start - Manages whole lifecycle of backend application
 func Start() {
 
 	redisClient := pubsub.Connect()
