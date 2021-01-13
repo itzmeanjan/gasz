@@ -57,4 +57,5 @@ type PubSubPayload struct {
 type GasPriceFeed struct {
 	TxType string  `json:"txType"`
 	Price  float64 `json:"price"`
+	Topic  string  `json:"topic"`
 }

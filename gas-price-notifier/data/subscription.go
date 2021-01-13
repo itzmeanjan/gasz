@@ -182,22 +182,21 @@ func (ps *PriceSubscription) GetClientResponse(payload *PubSubPayload) *GasPrice
 
 	var gasPrice GasPriceFeed
 
-	switch t := ps.Request.Field; t {
+	switch ps.Request.Field {
 
 	case "fast":
 		gasPrice.Price = payload.Fast
-		gasPrice.TxType = t
 	case "fastest":
 		gasPrice.Price = payload.Fastest
-		gasPrice.TxType = t
 	case "safeLow":
 		gasPrice.Price = payload.SafeLow
-		gasPrice.TxType = t
 	case "average":
 		gasPrice.Price = payload.Average
-		gasPrice.TxType = t
 
 	}
+
+	gasPrice.TxType = ps.Request.Field
+	gasPrice.Topic = ps.Request.String()
 
 	return &gasPrice
 
