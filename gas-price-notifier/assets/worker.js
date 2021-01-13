@@ -16,7 +16,7 @@ const createWebsocketConnection = _ => {
             return res(connAlreadyOpen)
         }
 
-        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+        socket = new WebSocket(`wss://gasz.in/v1/subscribe`)
 
         // websocket connection is open now
         socket.onopen = _ => {
