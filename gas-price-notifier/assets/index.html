@@ -201,6 +201,9 @@
                         }
                     }).catch(console.error)
 
+            } else {
+                alert('Browser doesn\'t support Service Workers 🙂')
+                return
             }
 
             $('.ui.dropdown').dropdown()

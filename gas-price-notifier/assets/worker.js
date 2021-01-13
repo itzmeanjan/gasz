@@ -111,6 +111,8 @@ this.addEventListener('notificationclick', async e => {
         })
     )
 
+    e.notification.close()
+
     if (e.action !== 'unsubscribe') {
         return
     }
@@ -134,8 +136,6 @@ this.addEventListener('notificationclick', async e => {
             }))
 
         })
-
-    e.notification.close()
 
 })
 
