@@ -19,19 +19,63 @@ import (
 // Functions defined on this struct, are supposed to be invoked for subscribing to and unsubscribing from
 // Redis pubsub topic, where price feed data is being published
 type PriceSubscription struct {
-	Client  *websocket.Conn
-	Request *Payload
-	Redis   *redis.Client
-	PubSub  *redis.PubSub
-	Lock    *sync.Mutex
+	Client    *websocket.Conn
+	Redis     *redis.Client
+	PubSub    *redis.PubSub
+	Topics    map[string]*Payload
+	TopicLock *sync.RWMutex
+	ConnLock  *sync.Mutex
 }
 
 // Subscribe - Subscribing to Redis pubsub channel
 // so that any time new price feed is posted in channel
 // listener will get notified & take proper measurements
 // if conditions satisfy
-func (ps *PriceSubscription) Subscribe(ctx context.Context) {
-	ps.PubSub = ps.Redis.Subscribe(ctx, config.Get("RedisPubSubChannel"))
+func (ps *PriceSubscription) Subscribe(req *Payload) {
+
+	// -- Safely reading from associative array
+	// shared among multiple go routines
+	ps.TopicLock.RLock()
+
+	_, ok := ps.Topics[req.String()]
+
+	ps.TopicLock.RUnlock()
+	// -- Safely read whether client is alreadY subscribed
+	// to topic or not
+
+	// Client is already subscribed to topic
+	if ok {
+
+		resp := ClientResponse{
+			Code:    0,
+			Message: "Already Subscribed",
+		}
+
+		// -- Critical section code, starts
+		ps.ConnLock.Lock()
+
+		if err := ps.Client.WriteJSON(&resp); err != nil {
+			log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+		}
+
+		ps.ConnLock.Unlock()
+		// -- Critical section code, ends
+
+		return
+
+	}
+
+	// -- Attempting to safely write to shared
+	// associative array
+	ps.TopicLock.Lock()
+	defer ps.TopicLock.Unlock()
+
+	ps.Topics[req.String()] = req
+	// -- Done with safe writing to shared memory space
+	//
+	// Lock to be released before returning from this
+	// function execution scope
+
 }
 
 // Listen - Subscribing to Redis pubsub and waiting for message
@@ -46,10 +90,6 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 	defer ps.Unsubscribe(ctx)
 
 	for {
-
-		if ps.Request.Type != "subscription" {
-			break
-		}
 
 		msg, err := ps.PubSub.ReceiveTimeout(ctx, time.Second)
 		if err != nil {
@@ -68,7 +108,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			}
 
 			// -- Critical section of code, starts
-			ps.Lock.Lock()
+			ps.ConnLock.Lock()
 
 			if err := ps.Client.WriteJSON(&resp); err != nil {
 				facedErrorInSwitchCase = true
@@ -77,7 +117,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			}
 
 			// -- Critical section of code, ends
-			ps.Lock.Unlock()
+			ps.ConnLock.Unlock()
 
 		case *redis.Message:
 
@@ -99,7 +139,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			}
 
 			// -- Critical section of code, starts
-			ps.Lock.Lock()
+			ps.ConnLock.Lock()
 
 			// Attempting to deliver price feed data, which they've subscribed to
 			if err := ps.Client.WriteJSON(ps.GetClientResponse(&pubsubPayload)); err != nil {
@@ -108,7 +148,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			}
 
 			// -- Critical section of code, ends
-			ps.Lock.Unlock()
+			ps.ConnLock.Unlock()
 
 		}
 
@@ -230,18 +270,16 @@ func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
 //
 // Whether client will receive notification that depends on whether received price value
 // satisfies criteria set by client
-func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *Payload, redisClient *redis.Client, lock *sync.Mutex) *PriceSubscription {
+func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *Payload, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex) *PriceSubscription {
 
 	ps := PriceSubscription{
-		Client:  client,
-		Request: request,
-		Redis:   redisClient,
-		Lock:    lock,
+		Client:    client,
+		Redis:     redisClient,
+		PubSub:    redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
+		TopicLock: topicLock,
+		ConnLock:  connLock,
 	}
 
-	// Subscription object to be stored in 👆 struct
-	// after calling this function
-	ps.Subscribe(ctx)
 	// Running listener i.e. subscriber in different execution thread
 	go ps.Listen(ctx)
 
