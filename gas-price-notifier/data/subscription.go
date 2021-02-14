@@ -68,13 +68,29 @@ func (ps *PriceSubscription) Subscribe(req *Payload) {
 	// -- Attempting to safely write to shared
 	// associative array
 	ps.TopicLock.Lock()
-	defer ps.TopicLock.Unlock()
 
 	ps.Topics[req.String()] = req
+
+	ps.TopicLock.Unlock()
 	// -- Done with safe writing to shared memory space
-	//
-	// Lock to be released before returning from this
-	// function execution scope
+
+	// Attempting to let client know
+	// subscription has been confirmed, for requested
+	// topic
+	resp := ClientResponse{
+		Code:    1,
+		Message: fmt.Sprintf("Subscribed to `%s`", req.String()),
+	}
+
+	// -- Critical section code, starts
+	ps.ConnLock.Lock()
+
+	if err := ps.Client.WriteJSON(&resp); err != nil {
+		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+	}
+
+	ps.ConnLock.Unlock()
+	// -- Critical section code, ends
 
 }
 
