@@ -94,6 +94,66 @@ func (ps *PriceSubscription) Subscribe(req *Payload) {
 
 }
 
+// Unsubscribe - Cancelling price feed subscription for specific user
+// and letting client know about it
+func (ps *PriceSubscription) Unsubscribe(req *Payload) {
+
+	ps.TopicLock.RLock()
+
+	_, ok := ps.Topics[req.String()]
+
+	ps.TopicLock.RUnlock()
+
+	if !ok {
+
+		resp := ClientResponse{
+			Code:    0,
+			Message: "Not Subscribed",
+		}
+
+		// -- Critical section code, starts
+		ps.ConnLock.Lock()
+
+		if err := ps.Client.WriteJSON(&resp); err != nil {
+			log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+		}
+
+		ps.ConnLock.Unlock()
+		// -- Critical section code, ends
+
+		return
+
+	}
+
+	// -- Safely removing topic entry from map, i.e. client
+	// not subscribed to this topic anymore
+	ps.TopicLock.Lock()
+
+	delete(ps.Topics, req.String())
+
+	ps.TopicLock.Unlock()
+	// -- Done with removing entry from shared map
+
+	// Attempting to let client know
+	// unsubscription has been confirmed, for requested
+	// topic
+	resp := ClientResponse{
+		Code:    1,
+		Message: fmt.Sprintf("Unsubscribed from `%s`", req.String()),
+	}
+
+	// -- Critical section code, starts
+	ps.ConnLock.Lock()
+
+	if err := ps.Client.WriteJSON(&resp); err != nil {
+		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+	}
+
+	ps.ConnLock.Unlock()
+	// -- Critical section code, ends
+
+}
+
 // Listen - Subscribing to Redis pubsub and waiting for message
 // to be published, as soon as it's published it's being sent to
 // client application, connected via websocket connection
@@ -255,29 +315,6 @@ func (ps *PriceSubscription) GetClientResponse(payload *PubSubPayload) *GasPrice
 	gasPrice.Topic = ps.Request.String()
 
 	return &gasPrice
-
-}
-
-// Unsubscribe - Cancelling price feed subscription for specific user
-// and letting client know about it
-func (ps *PriceSubscription) Unsubscribe(ctx context.Context) {
-
-	if err := ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
-		log.Printf("[!] Failed to unsubscribe from pubsub topic : %s\n", err.Error())
-		return
-	}
-
-	resp := ClientResponse{
-		Code:    1,
-		Message: fmt.Sprintf("Unsubscribed from `%s`", ps.Request),
-	}
-
-	ps.Lock.Lock()
-	defer ps.Lock.Unlock()
-
-	if err := ps.Client.WriteJSON(&resp); err != nil {
-		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
-	}
 
 }
 
