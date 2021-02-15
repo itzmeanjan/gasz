@@ -108,7 +108,7 @@ func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 
 // Unsubscribe - Cancelling price feed subscription for specific user
 // and letting client know about it
-func (ps *PriceSubscription) Unsubscribe(req *Payload) {
+func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 
 	ps.TopicLock.RLock()
 
@@ -123,17 +123,22 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) {
 			Message: "Not Subscribed",
 		}
 
+		status := true
+
 		// -- Critical section code, starts
 		ps.ConnLock.Lock()
 
 		if err := ps.Client.WriteJSON(&resp); err != nil {
+
+			status = false
 			log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 		}
 
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
-		return
+		return status
 
 	}
 
@@ -154,15 +159,22 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) {
 		Message: fmt.Sprintf("Unsubscribed from `%s`", req.String()),
 	}
 
+	status := true
+
 	// -- Critical section code, starts
 	ps.ConnLock.Lock()
 
 	if err := ps.Client.WriteJSON(&resp); err != nil {
+
+		status = false
 		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 	}
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	return status
 
 }
 
