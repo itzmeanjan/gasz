@@ -112,6 +112,10 @@ func Start() {
 
 			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
 
+			// This will ensure when client gets disconnected, their pubsub listener
+			// go routine will also exit i.e. by unsubscribing from pubsub topic
+			defer subscriptionManager.SudoUnsubscribe(ctx)
+
 			// Handling client request and responding accordingly
 			for {
 
