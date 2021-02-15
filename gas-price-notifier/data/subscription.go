@@ -247,7 +247,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 // to which client has subscribed to, is {<, >, <=, >=, ==} to gas price they have provided us with
 //
 // If yes, we're going to deliver this piece of data to client
-func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool {
+func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool, *Payload) {
 
 	// -- Closure starting here
 	//
@@ -281,7 +281,12 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool 
 	}
 	// -- Closure ending here
 
+	// To be returned back to caller
+	//
+	// If `status` is true, `request` will also be
+	// non-nil
 	var status bool
+	var request *Payload
 
 	for _, v := range ps.Topics {
 
@@ -299,12 +304,15 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool 
 		}
 
 		if status {
+
+			request = v
 			break
+
 		}
 
 	}
 
-	return status
+	return status, request
 
 }
 
