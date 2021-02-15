@@ -210,10 +210,18 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			// If not satisfying criteria, then we're not attempting to deliver
 			//
 			// Otherwise, delivery attempt to be made
-			yes, req := ps.isEligibleForDelivery(&pubsubPayload)
+			yes, reqID := ps.isEligibleForDelivery(&pubsubPayload)
 			if !yes {
 				break
 			}
+
+			// -- Safe reading being performed
+			ps.TopicLock.RLock()
+
+			req := ps.Topics[reqID]
+
+			ps.TopicLock.RUnlock()
+			// -- Done with safe reading
 
 			// -- Critical section of code, starts
 			ps.ConnLock.Lock()
