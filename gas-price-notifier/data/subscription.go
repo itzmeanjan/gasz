@@ -158,12 +158,12 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) {
 // to be published, as soon as it's published it's being sent to
 // client application, connected via websocket connection
 //
+// Of course criteria evaluation is performed before sending
+// notification to client
 //
+// Listening criteria to be specified by client application
+// during subscription phase
 func (ps *PriceSubscription) Listen(ctx context.Context) {
-
-	// Scheduling unsubscription call here, to be invoked when
-	// returning from this function
-	defer ps.Unsubscribe(ctx)
 
 	for {
 
@@ -172,28 +172,27 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			continue
 		}
 
-		var facedErrorInSwitchCase bool
+		var stopListening bool
 
 		switch m := msg.(type) {
 
 		case *redis.Subscription:
 
-			resp := ClientResponse{
-				Code:    1,
-				Message: fmt.Sprintf("Subscribed to `%s`", ps.Request),
-			}
+			if m.Kind == "subscribe" {
 
-			// -- Critical section of code, starts
-			ps.ConnLock.Lock()
-
-			if err := ps.Client.WriteJSON(&resp); err != nil {
-				facedErrorInSwitchCase = true
-				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+				log.Printf(fmt.Sprintf("[*] Subscribed to %s\n", config.Get("RedisPubSubChannel")))
+				break
 
 			}
 
-			// -- Critical section of code, ends
-			ps.ConnLock.Unlock()
+			if m.Kind == "unsubscribe" {
+
+				stopListening = true
+				log.Printf(fmt.Sprintf("[*] Unsubscribed from %s\n", config.Get("RedisPubSubChannel")))
+
+				break
+
+			}
 
 		case *redis.Message:
 
@@ -201,7 +200,8 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			_msg := []byte(m.Payload)
 
 			if err := json.Unmarshal(_msg, &pubsubPayload); err != nil {
-				facedErrorInSwitchCase = true
+
+				stopListening = true
 				log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
 
 				break
@@ -219,8 +219,10 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 			// Attempting to deliver price feed data, which they've subscribed to
 			if err := ps.Client.WriteJSON(ps.GetClientResponse(&pubsubPayload)); err != nil {
-				facedErrorInSwitchCase = true
+
+				stopListening = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 			}
 
 			// -- Critical section of code, ends
@@ -228,10 +230,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 		}
 
-		// Checking whether we've encountered any error with in switch case
-		//
-		// If yes, we can break out of this loop
-		if facedErrorInSwitchCase {
+		// If something went wrong in execution flow with in `switch-case`
+		// block, we're going to get out of listener loop
+		if stopListening {
 			break
 		}
 
@@ -329,6 +330,7 @@ func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *
 		Client:    client,
 		Redis:     redisClient,
 		PubSub:    redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
+		Topics:    make(map[string]*Payload),
 		TopicLock: topicLock,
 		ConnLock:  connLock,
 	}
