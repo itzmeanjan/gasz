@@ -248,7 +248,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 // to which client has subscribed to, is {<, >, <=, >=, ==} to gas price they have provided us with
 //
 // If yes, we're going to deliver this piece of data to client
-func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool, *Payload) {
+func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool, string) {
 
 	// -- Closure starting here
 	//
@@ -284,12 +284,18 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool
 
 	// To be returned back to caller
 	//
-	// If `status` is true, `request` will also be
-	// non-nil
-	var status bool
-	var request *Payload
+	// If `status` is true, `requestID` will also be
+	// non-empty
+	var (
+		status    bool
+		requestID string
+	)
 
-	for _, v := range ps.Topics {
+	// -- Attempting to safely read shared data structure,
+	// by acquiring shared lock i.e. read only lock
+	ps.TopicLock.RLock()
+
+	for k, v := range ps.Topics {
 
 		switch v.Field {
 
@@ -306,14 +312,17 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool
 
 		if status {
 
-			request = v
+			requestID = k
 			break
 
 		}
 
 	}
 
-	return status, request
+	ps.TopicLock.RUnlock()
+	// -- Releasing shared lock, after reading is done
+
+	return status, requestID
 
 }
 
