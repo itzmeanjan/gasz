@@ -219,7 +219,7 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			ps.ConnLock.Lock()
 
 			// Attempting to deliver price feed data, which they've subscribed to
-			if err := ps.Client.WriteJSON(ps.GetClientResponse(&pubsubPayload)); err != nil {
+			if err := ps.Client.WriteJSON(ps.GetClientResponse(&pubsubPayload, req)); err != nil {
 
 				stopListening = true
 				log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
