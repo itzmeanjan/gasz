@@ -1,6 +1,7 @@
 package notifier
 
 import (
+	"context"
 	"fmt"
 	"gas-price-notifier/config"
 	"gas-price-notifier/data"
@@ -103,15 +104,12 @@ func Start() {
 			// subscribe tp different price feeds using single connection
 			//
 			// They will receive notification as soon as any such criteria gets satisfied
-			subscriptions := make(map[string]*data.PriceSubscription)
-			lock := sync.Mutex{}
+			topicLock := &sync.RWMutex{}
+			connLock := &sync.Mutex{}
 
-			// Unsubscribing from all subscriptions, for this client
-			defer func() {
-				for _, v := range subscriptions {
-					v.Request.Type = "unsubscription"
-				}
-			}()
+			ctx, _ := context.WithCancel(c.Request().Context())
+
+			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
 
 			// Handling client request and responding accordingly
 			for {
@@ -120,9 +118,10 @@ func Start() {
 
 				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
+
 					log.Printf("[!] Failed to read data from client : %s\n", err.Error())
-					// In case, some error is faced, unlocking critical section here
 					break
+
 				}
 
 				// Validating client payload
@@ -131,16 +130,18 @@ func Start() {
 					log.Printf("[!] Invalid payload : %s\n", err.Error())
 
 					// -- Critical section code, starts
-					lock.Lock()
+					connLock.Lock()
 
 					if err := conn.WriteJSON(&data.ClientResponse{
 						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
+
 						log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 					}
 
-					lock.Unlock()
+					connLock.Unlock()
 					// -- Critical section code, ends
 
 					break
@@ -157,67 +158,9 @@ func Start() {
 				switch payload.Type {
 
 				case "subscription":
-
-					// Client has already subscribed to this event
-					_, ok := subscriptions[payload.String()]
-					if ok {
-						resp := data.ClientResponse{
-							Code:    0,
-							Message: "Already Subscribed",
-						}
-
-						// -- Critical section code, starts
-						lock.Lock()
-
-						if err := conn.WriteJSON(&resp); err != nil {
-							facedErrorInSwitchCase = true
-							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
-						}
-
-						lock.Unlock()
-						// -- Critical section code, ends
-
-						break
-					}
-
-					// Creating subscription entry for this client in associative array
-					//
-					// To be used in future when `unsubscription` request to be received
-					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient, &lock)
-
+					subscriptionManager.Subscribe(&payload)
 				case "unsubscription":
-
-					// Client doesn't have any subscription
-					// for this event, so there's no question
-					// of unsubscription
-					subs, ok := subscriptions[payload.String()]
-					if !ok {
-						resp := data.ClientResponse{
-							Code:    0,
-							Message: "Not Subscribed",
-						}
-
-						// -- Critical section code, starts
-						lock.Lock()
-
-						if err := conn.WriteJSON(&resp); err != nil {
-							facedErrorInSwitchCase = true
-							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
-						}
-
-						lock.Unlock()
-						// -- Critical section code, ends
-
-						break
-					}
-
-					// Cancelling subscription
-					if subs != nil {
-						subs.Request.Type = "unsubscription"
-					}
-
-					// Removing subscription entry from associative array
-					delete(subscriptions, payload.String())
+					subscriptionManager.Unsubscribe(&payload)
 
 				}
 

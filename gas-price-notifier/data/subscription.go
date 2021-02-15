@@ -371,7 +371,7 @@ func (ps *PriceSubscription) GetClientResponse(published *PubSubPayload, request
 //
 // Whether client will receive notification that depends on whether received price value
 // satisfies criteria set by client
-func NewPriceSubscription(ctx context.Context, client *websocket.Conn, request *Payload, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex) *PriceSubscription {
+func NewPriceSubscription(ctx context.Context, client *websocket.Conn, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex) *PriceSubscription {
 
 	ps := PriceSubscription{
 		Client:    client,
