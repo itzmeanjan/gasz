@@ -210,7 +210,8 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			// If not satisfying criteria, then we're not attempting to deliver
 			//
 			// Otherwise, delivery attempt to be made
-			if !ps.isEligibleForDelivery(&pubsubPayload) {
+			yes, req := ps.isEligibleForDelivery(&pubsubPayload)
+			if !yes {
 				break
 			}
 
@@ -318,25 +319,25 @@ func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) (bool
 
 // GetClientResponse - Returns gas price response to be sent to client,
 // when gas price reaches certain value, which satisfies client set criteria
-func (ps *PriceSubscription) GetClientResponse(payload *PubSubPayload) *GasPriceFeed {
+func (ps *PriceSubscription) GetClientResponse(published *PubSubPayload, requested *Payload) *GasPriceFeed {
 
 	var gasPrice GasPriceFeed
 
-	switch ps.Request.Field {
+	switch requested.Field {
 
 	case "fast":
-		gasPrice.Price = payload.Fast
+		gasPrice.Price = published.Fast
 	case "fastest":
-		gasPrice.Price = payload.Fastest
+		gasPrice.Price = published.Fastest
 	case "safeLow":
-		gasPrice.Price = payload.SafeLow
+		gasPrice.Price = published.SafeLow
 	case "average":
-		gasPrice.Price = payload.Average
+		gasPrice.Price = published.Average
 
 	}
 
-	gasPrice.TxType = ps.Request.Field
-	gasPrice.Topic = ps.Request.String()
+	gasPrice.TxType = requested.Field
+	gasPrice.Topic = requested.String()
 
 	return &gasPrice
 
