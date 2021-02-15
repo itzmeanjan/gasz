@@ -107,7 +107,8 @@ func Start() {
 			topicLock := &sync.RWMutex{}
 			connLock := &sync.Mutex{}
 
-			ctx, _ := context.WithCancel(c.Request().Context())
+			ctx, cancel := context.WithCancel(c.Request().Context())
+			defer cancel()
 
 			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
 
@@ -158,7 +159,7 @@ func Start() {
 				switch payload.Type {
 
 				case "subscription":
-					subscriptionManager.Subscribe(&payload)
+					facedErrorInSwitchCase = subscriptionManager.Subscribe(&payload)
 				case "unsubscription":
 					subscriptionManager.Unsubscribe(&payload)
 

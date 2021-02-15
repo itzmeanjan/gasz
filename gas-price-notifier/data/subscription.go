@@ -31,7 +31,7 @@ type PriceSubscription struct {
 // so that any time new price feed is posted in channel
 // listener will get notified & take proper measurements
 // if conditions satisfy
-func (ps *PriceSubscription) Subscribe(req *Payload) {
+func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 
 	// -- Safely reading from associative array
 	// shared among multiple go routines
@@ -51,17 +51,22 @@ func (ps *PriceSubscription) Subscribe(req *Payload) {
 			Message: "Already Subscribed",
 		}
 
+		status := true
+
 		// -- Critical section code, starts
 		ps.ConnLock.Lock()
 
 		if err := ps.Client.WriteJSON(&resp); err != nil {
+
+			status = false
 			log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 		}
 
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
-		return
+		return status
 
 	}
 
@@ -82,15 +87,22 @@ func (ps *PriceSubscription) Subscribe(req *Payload) {
 		Message: fmt.Sprintf("Subscribed to `%s`", req.String()),
 	}
 
+	status := true
+
 	// -- Critical section code, starts
 	ps.ConnLock.Lock()
 
 	if err := ps.Client.WriteJSON(&resp); err != nil {
+
+		status = false
 		log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 	}
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	return status
 
 }
 
