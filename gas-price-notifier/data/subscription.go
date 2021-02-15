@@ -178,6 +178,19 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 
 }
 
+// SudoUnsubscribe - This function is supposed to be called only
+// when client gets disconnected i.e. no subscription
+// for that connected client doesn't need to be managed now
+func (ps *PriceSubscription) SudoUnsubscribe(ctx context.Context) {
+
+	if err := ps.PubSub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
+
+		log.Printf("[!] Failed to unsubscribe from pubsub topic : %s\n", err.Error())
+
+	}
+
+}
+
 // Listen - Subscribing to Redis pubsub and waiting for message
 // to be published, as soon as it's published it's being sent to
 // client application, connected via websocket connection
