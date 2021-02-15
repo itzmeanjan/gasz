@@ -161,7 +161,7 @@ func Start() {
 				case "subscription":
 					facedErrorInSwitchCase = subscriptionManager.Subscribe(&payload)
 				case "unsubscription":
-					subscriptionManager.Unsubscribe(&payload)
+					facedErrorInSwitchCase = subscriptionManager.Unsubscribe(&payload)
 
 				}
 
