@@ -218,7 +218,13 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 			// -- Safe reading being performed
 			ps.TopicLock.RLock()
 
-			req := ps.Topics[reqID]
+			req, ok := ps.Topics[reqID]
+			if !ok {
+
+				ps.TopicLock.RUnlock()
+				break
+
+			}
 
 			ps.TopicLock.RUnlock()
 			// -- Done with safe reading
