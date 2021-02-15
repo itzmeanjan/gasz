@@ -249,44 +249,59 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 // If yes, we're going to deliver this piece of data to client
 func (ps *PriceSubscription) isEligibleForDelivery(payload *PubSubPayload) bool {
 
+	// -- Closure starting here
+	//
 	// Given obtained gas price of certain category i.e. to which
 	// client has subscribed to and criteria specified by them,
 	// we'll check whether it's satisfying requirement or not
 	//
 	// This closure is written so that it becomes easier to use
 	// for all price subscription categories i.e. {fast, fastest, safeLow, average}
-	checkThreshold := func(price float64) bool {
+	checkThreshold := func(price float64, operator string, threshold float64) bool {
 
-		status := true
+		var status bool
 
-		switch ps.Request.Operator {
+		switch operator {
+
 		case "<":
-			status = price < ps.Request.Threshold
+			status = price < threshold
 		case ">":
-			status = price > ps.Request.Threshold
+			status = price > threshold
 		case "<=":
-			status = price <= ps.Request.Threshold
+			status = price <= threshold
 		case ">=":
-			status = price >= ps.Request.Threshold
+			status = price >= threshold
 		case "==":
-			status = price == ps.Request.Threshold
+			status = price == threshold
+
 		}
 
 		return status
 
 	}
+	// -- Closure ending here
 
-	status := true
+	var status bool
 
-	switch ps.Request.Field {
-	case "fast":
-		status = checkThreshold(payload.Fast)
-	case "fastest":
-		status = checkThreshold(payload.Fastest)
-	case "safeLow":
-		status = checkThreshold(payload.SafeLow)
-	case "average":
-		status = checkThreshold(payload.Average)
+	for _, v := range ps.Topics {
+
+		switch v.Field {
+
+		case "fast":
+			status = checkThreshold(payload.Fast, v.Operator, v.Threshold)
+		case "fastest":
+			status = checkThreshold(payload.Fastest, v.Operator, v.Threshold)
+		case "safeLow":
+			status = checkThreshold(payload.SafeLow, v.Operator, v.Threshold)
+		case "average":
+			status = checkThreshold(payload.Average, v.Operator, v.Threshold)
+
+		}
+
+		if status {
+			break
+		}
+
 	}
 
 	return status
