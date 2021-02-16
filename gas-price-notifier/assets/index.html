@@ -167,7 +167,12 @@
                             navigator.serviceWorker.addEventListener('message', m => {
                                 
                                 const msg = JSON.parse(m.data)
-                            
+
+                                if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
+                                    console.log(msg)
+                                    return
+                                }
+
                                 // -- Staring to handle subscription/ unsubsciption messages
                                 if ('code' in msg){
                                     if(msg['code'] !== 1) {
