@@ -19,12 +19,13 @@ import (
 // Functions defined on this struct, are supposed to be invoked for subscribing to and unsubscribing from
 // Redis pubsub topic, where price feed data is being published
 type PriceSubscription struct {
-	Client    *websocket.Conn
-	Redis     *redis.Client
-	PubSub    *redis.PubSub
-	Topics    map[string]*Payload
-	TopicLock *sync.RWMutex
-	ConnLock  *sync.Mutex
+	Client         *websocket.Conn
+	Redis          *redis.Client
+	PubSub         *redis.PubSub
+	Topics         map[string]*Payload
+	TopicLock      *sync.RWMutex
+	ConnLock       *sync.Mutex
+	TrafficCounter *WSTraffic
 }
 
 // Subscribe - Subscribing to Redis pubsub channel
@@ -461,15 +462,16 @@ func (ps *PriceSubscription) GetClientResponse(published *PubSubPayload, request
 //
 // Whether client will receive notification that depends on whether received price value
 // satisfies criteria set by client
-func NewPriceSubscription(ctx context.Context, client *websocket.Conn, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex) *PriceSubscription {
+func NewPriceSubscription(ctx context.Context, client *websocket.Conn, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex, trafficCounter *WSTraffic) *PriceSubscription {
 
 	ps := PriceSubscription{
-		Client:    client,
-		Redis:     redisClient,
-		PubSub:    redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
-		Topics:    make(map[string]*Payload),
-		TopicLock: topicLock,
-		ConnLock:  connLock,
+		Client:         client,
+		Redis:          redisClient,
+		PubSub:         redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
+		Topics:         make(map[string]*Payload),
+		TopicLock:      topicLock,
+		ConnLock:       connLock,
+		TrafficCounter: trafficCounter,
 	}
 
 	// Running listener i.e. subscriber in different execution thread

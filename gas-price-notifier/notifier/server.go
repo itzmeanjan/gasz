@@ -110,7 +110,13 @@ func Start() {
 			ctx, cancel := context.WithCancel(c.Request().Context())
 			defer cancel()
 
-			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
+			// Initializing traffic counter for this connection
+			//
+			// Will keep track of how many read/ write message op(s)
+			// happened during connection lifetime
+			trafficCounter := &data.WSTraffic{Read: 0, Write: 0}
+
+			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock, trafficCounter)
 
 			// This will ensure when client gets disconnected, their pubsub listener
 			// go routine will also exit i.e. by unsubscribing from pubsub topic
