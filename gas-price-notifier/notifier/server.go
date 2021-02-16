@@ -22,9 +22,7 @@ func Start() {
 	redisClient := pubsub.Connect()
 	defer redisClient.Close()
 
-	connCount := data.SafeActiveConnections{
-		Lock:        &sync.RWMutex{},
-		Connections: &data.ActiveConnections{Count: 0}}
+	connCount := &data.ActiveConnections{Count: 0}
 
 	handle := echo.New()
 
@@ -72,13 +70,10 @@ func Start() {
 
 		v1.GET("/stat", func(c echo.Context) error {
 
-			connCount.Lock.RLock()
-			defer connCount.Lock.RUnlock()
-
 			return c.JSON(http.StatusOK, struct {
 				Active uint64 `json:"active"`
 			}{
-				Active: connCount.Connections.Count,
+				Active: connCount.Count,
 			})
 		})
 
