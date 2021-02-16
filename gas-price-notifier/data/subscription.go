@@ -292,6 +292,32 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 }
 
+// Checking whether this client has enabled listening for
+// all events or not
+//
+// Listening for all updates generally used by browser clients
+// so that latest price feed can be shown & updated in real-time
+// in webUI
+func (ps *PriceSubscription) isListenAllEnabled() bool {
+
+	ps.TopicLock.RLock()
+	defer ps.TopicLock.RUnlock()
+
+	status := false
+
+	for _, v := range ps.Topics {
+
+		if v.Field == "*" && v.Operator == "*" {
+			status = true
+			break
+		}
+
+	}
+
+	return status
+
+}
+
 // Checking whether price data feed received is eligible for delivery, by comparing
 // with evaluation criteria provided by user, when subscribing to price feed
 //
