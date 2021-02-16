@@ -1,6 +1,6 @@
 package data
 
-import "sync"
+import "sync/atomic"
 
 // ActiveConnections - Keeping number of active websocket
 // connection
@@ -8,25 +8,12 @@ type ActiveConnections struct {
 	Count uint64
 }
 
-// SafeActiveConnections - Connection Info which can be safely updated
-// from multiple worker in concurrent fashion
-type SafeActiveConnections struct {
-	Connections *ActiveConnections
-	Lock        *sync.RWMutex
+// Increment - Atomically increments count of active connections by some positive integer
+func (a *ActiveConnections) Increment(by uint64) {
+	atomic.AddUint64(&a.Count, by)
 }
 
-// Increment - Increments count of active connections by some positive integer
-func (s *SafeActiveConnections) Increment(by uint64) {
-	s.Lock.Lock()
-	defer s.Lock.Unlock()
-
-	s.Connections.Count += by
-}
-
-// Decrement - Decrements count of active connections by some positive integer
-func (s *SafeActiveConnections) Decrement(by uint64) {
-	s.Lock.Lock()
-	defer s.Lock.Unlock()
-
-	s.Connections.Count -= by
+// Decrement - Atomically decrements count of active connections by some positive integer
+func (a *ActiveConnections) Decrement(by uint64) {
+	atomic.AddUint64(&a.Count, ^uint64(by-1))
 }
