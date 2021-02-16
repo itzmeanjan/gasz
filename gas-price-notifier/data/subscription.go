@@ -244,6 +244,33 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				break
 			}
 
+			// Checking whether this client has requested for latest price feed
+			// or not
+			//
+			// If yes, latest gas price for all kind of tx(s) to be sent to client
+			if ps.isListenAllEnabled() {
+
+				// -- Critical section of code, starts
+				ps.ConnLock.Lock()
+
+				// Attempting to push gas price update with all fields to client
+				if err := ps.Client.WriteJSON(&pubsubPayload); err != nil {
+
+					stopListening = true
+					log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
+					// -- Critical section of code, ends, in case of failure in writing to socket
+					ps.ConnLock.Unlock()
+
+					break
+
+				}
+
+				// -- Critical section of code, ends
+				ps.ConnLock.Unlock()
+
+			}
+
 			// If not satisfying criteria, then we're not attempting to deliver
 			//
 			// Otherwise, delivery attempt to be made
