@@ -70,14 +70,14 @@ Once you do 👆, you'll be unsubscribed from gas price notification feed.
 
 You might also be interested in programmatically accessing Ethereum Gas Price data feed, for that consider sending a subscription request for certain category of gas price satisfying certain criteria.
 
-For example, let's say I'm waiting `fastest` tx gas price to go below 50 Gwei, I'll send a payload of form
+For example, let's say I'm waiting `fastest` tx gas price to go below 50 Gwei, I'll send a payload of form in JSON serialized form
 
-```js
+```json
 {
-    type: 'subscription',
-    field: 'fastest',
-    threshold: 50,
-    operator: '<'
+    "type": "subscription",
+    "field": "fastest",
+    "threshold": 50,
+    "operator": "<"
 }
 ```
 
@@ -85,12 +85,11 @@ after connecting to `wss://gasz.in/v1/subscribe`.
 
 Once gas price reaches that price, I'll receive response of form 👇, over websocket
 
-```js
+```json
 {
-    fast: 45,
-    fastest: 49,
-    average: 39,
-    safeLow: 32
+    "txType": "fastest",
+    "price": 43,
+    "topic": "fastest : < 50.000000"
 }
 ```
 
@@ -113,6 +112,8 @@ to `wss://gasz.in/v1/subscribe`.
 - `field` ∈ _{`fast`, `fastest`, `average`, `safeLow`}_
 - `threshold` > 0 _( in Gwei )_
 - `operator` ∈ `{<, >, <=, >=, ==}`
+
+> Note : You may want to check [example](./example).
 
 ## Disclaimer
 
