@@ -16,7 +16,7 @@ const createWebsocketConnection = _ => {
             return res(connAlreadyOpen)
         }
 
-        socket = new WebSocket(`wss://gasz.in/v1/subscribe`)
+        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
         // websocket connection is open now
         socket.onopen = _ => {
@@ -59,13 +59,25 @@ const createWebsocketConnection = _ => {
 
             if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
 
-                console.log(msg)
+                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+                })
+
                 return
 
             }
 
             // -- Starting to handle subscription/ unsubsciption messages
             if ('code' in msg) {
+
+                // If this is a confirmation of all gas price update topic, we're
+                // not going to show it in UI, rather we're simply dropping it
+                //
+                // It's not user initiated action
+                if (msg['message'] === 'Subscribed to `* : * 1.000000`' || msg['message'] === 'Unsubscribed from `* : * 1.000000`') {
+                    return
+                }
+
                 this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                     clients.forEach(client => client.postMessage(JSON.stringify(msg)))
                 })
