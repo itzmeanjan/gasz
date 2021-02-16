@@ -117,6 +117,12 @@ func Start() {
 			// happened during connection lifetime
 			trafficCounter := &data.WSTraffic{Read: 0, Write: 0}
 
+			defer func() {
+
+				log.Printf("[✅] Closing websocket connection [ Read : %d | Write : %d ]\n", trafficCounter.Read, trafficCounter.Write)
+
+			}()
+
 			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock, trafficCounter)
 
 			// This will ensure when client gets disconnected, their pubsub listener
