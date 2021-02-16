@@ -89,10 +89,17 @@ this.addEventListener('message', m => {
     createWebsocketConnection()
         .then(v => {
             console.log(v)
+
+            const parsed = JSON.parse(m.data)
+            if (parsed['field'] === '*' && parsed['operator'] === '*' && `${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}` in subscriptions) {
+
+                console.log('Already subscribed to it')
+                return
+
+            }
+
             socket.send(m.data)
 
-            // Keeping track of which topic this client is subscribed to
-            const parsed = JSON.parse(m.data)
             subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
         })
         .catch(console.error)
