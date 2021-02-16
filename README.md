@@ -4,6 +4,12 @@ Ethereum Gas Price Notifier @ [gasz.in](https://gasz.in)
 
 ![banner](sc/banner.gif)
 
+**Update 🥳**
+
+As unconditional gas price update has been implemented to show recommended Ethereum Gas Price feed in real-time, we've updated webUI 👇
+
+![webUI](sc/webUI_4.png)
+
 ## Introduction
 
 While interacting with Ethereum Network I had to frequently visit `ethgasstation.info` for checking current `safeLow` gas price to decide when I can send transaction, which was really eating a lot of my time.
@@ -114,6 +120,8 @@ to `wss://gasz.in/v1/subscribe`.
 - `operator` ∈ `{<, >, <=, >=, ==}`
 
 > Note : You may want to check [example](./example).
+
+If you want to receive unconditional gas price updates, you should check [this example](https://github.com/itzmeanjan/gasz/blob/4759e74335288b31666547c628068c19675fa03b/example/index.js#L61-L69).
 
 ## Disclaimer
 
