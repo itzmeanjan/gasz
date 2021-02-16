@@ -6,24 +6,6 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-// ListenAll - Listen to all gas price fields with out any condition
-// as soon as any of them get updated
-type ListenAll struct {
-	Type string `json:"type"`
-}
-
-// Validate - Checks if `type` field is set to
-// subscription/ unsubscription
-//
-// No need to put any other condition checking, as
-// client is interested in listening to all gas price field
-// updation
-func (l *ListenAll) Validate() error {
-
-	return validation.ValidateStruct(l, validation.Field(&l.Type, validation.Required, validation.In("subscription", "unsubscription")))
-
-}
-
 // Payload - Payload received from client via websocket connection
 type Payload struct {
 	Type      string  `json:"type"`
