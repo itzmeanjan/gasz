@@ -63,7 +63,7 @@ _client.on('connect', c => {
             {
                 type: flag ? 'subscription' : 'unsubscription',
                 field: '*',
-                threshold: 4444,
+                threshold: 1, // this threshold value is not important here, it can be  >= 1.0
                 operator: '*'
             }
         ))
