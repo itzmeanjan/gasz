@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -135,6 +136,9 @@ func Start() {
 
 				}
 
+				// Incremented how many messages are received from client
+				atomic.AddUint64(&trafficCounter.Read, 1)
+
 				// Validating client payload
 				if err := payload.Validate(); err != nil {
 
@@ -154,6 +158,9 @@ func Start() {
 
 					connLock.Unlock()
 					// -- Critical section code, ends
+
+					// Incremented how many messages are received from client
+					atomic.AddUint64(&trafficCounter.Read, 1)
 
 					break
 
