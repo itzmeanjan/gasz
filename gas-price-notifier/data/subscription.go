@@ -7,6 +7,7 @@ import (
 	"gas-price-notifier/config"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -67,6 +68,9 @@ func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
+		// Incremented how many messages are sent to client
+		atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 		return status
 
 	}
@@ -102,6 +106,9 @@ func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	// Incremented how many messages are sent to client
+	atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 	return status
 
@@ -139,6 +146,9 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
+		// Incremented how many messages are sent to client
+		atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 		return status
 
 	}
@@ -174,6 +184,9 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	// Incremented how many messages are sent to client
+	atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 	return status
 
@@ -270,6 +283,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				// -- Critical section of code, ends
 				ps.ConnLock.Unlock()
 
+				// Incremented how many messages are sent to client
+				atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 			}
 
 			// If not satisfying criteria, then we're not attempting to deliver
@@ -307,6 +323,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 			// -- Critical section of code, ends
 			ps.ConnLock.Unlock()
+
+			// Incremented how many messages are sent to client
+			atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 		}
 

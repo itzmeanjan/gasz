@@ -159,8 +159,8 @@ func Start() {
 					connLock.Unlock()
 					// -- Critical section code, ends
 
-					// Incremented how many messages are received from client
-					atomic.AddUint64(&trafficCounter.Read, 1)
+					// Incremented how many messages are sent to client
+					atomic.AddUint64(&trafficCounter.Write, 1)
 
 					break
 
