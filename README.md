@@ -89,7 +89,11 @@ For example, let's say I'm waiting `fastest` tx gas price to go below 50 Gwei, I
 
 after connecting to `wss://gasz.in/v1/subscribe`.
 
-Once gas price reaches that price, I'll receive response of form 👇, over websocket
+Once gas price reaches that price, I'll receive response of form 👇, over websocket, where `topic` is useful for checking for which subscription you're receiving this feed, because same websocket connection can be used for subscribing to multiple feeds i.e. with multiple criterias.
+
+👇 assumes you subscribed for **fast** gas price, when it reaches **< 50 Gwei**
+
+`txType` can be any of _{`fast`, `fastest`, `average`, `safeLow`}_. And `price` is what you're interested in & it's in Gwei.
 
 ```json
 {
