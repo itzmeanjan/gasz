@@ -113,7 +113,7 @@
     }">
         <div class="ui center aligned red container">
             <div class="ui raised text container">
-                <p style="color: rgb(91, 219, 202); font-size: small;">Made with ❤️ for Ethereum Community</p>
+                <p id="live-price-feed" style="color: rgb(10, 10, 10); font-size: medium;"></p>
             </div>
         </div>
     </div>
@@ -169,8 +169,10 @@
                                 const msg = JSON.parse(m.data)
 
                                 if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
-                                    console.log(msg)
+
+                                    document.getElementById('live-price-feed').innerHTML = `Fastest : ${msg['fastest']} Gwei | Fast : ${msg['fast']} Gwei | Average : ${msg['average']} Gwei | SafeLow : ${msg['safeLow']} Gwei`
                                     return
+
                                 }
 
                                 // -- Staring to handle subscription/ unsubsciption messages
@@ -210,7 +212,18 @@
 
                             })
 
-                            navigator.serviceWorker.ready.then(reg => { window.Service_Worker = reg.active })
+                            navigator.serviceWorker.ready.then(reg => { 
+                                window.Service_Worker = reg.active
+
+                                console.log('Attempting to subscribe to live gas price feed topic')
+
+                                Service_Worker.postMessage(JSON.stringify({
+                                    type: 'subscription',
+                                    field: '*',
+                                    operator: '*',
+                                    threshold: 1.0
+                                }))
+                            })
 
                         }
                     }).catch(console.error)

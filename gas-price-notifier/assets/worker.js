@@ -20,24 +20,7 @@ const createWebsocketConnection = _ => {
 
         // websocket connection is open now
         socket.onopen = _ => {
-
-            // As soon as connection is established, attempt
-            // to subscribe to all price update feed
-            //
-            // This will help us in eventually updating
-            // webUI with near real-time gas price data
-            // obtained from https://ethgasstation.info
-            socket.send(JSON.stringify(
-                {
-                    type: 'subscription',
-                    field: '*',
-                    threshold: 1, // this threshold value is not important here, it can be  >= 1.0
-                    operator: '*'
-                }
-            ))
-
             return res(connOpen)
-
         }
 
         // connection with backend got closed
