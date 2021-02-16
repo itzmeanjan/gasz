@@ -21,14 +21,43 @@ _client.on('connect', c => {
 
     // periodic subscription & unsubscription request performed
     handler = _ => {
+
+        c.send(JSON.stringify(
+            {
+                type: flag ? 'subscription' : 'unsubscription',
+                field: 'safeLow',
+                threshold: 1111,
+                operator: '<='
+            }
+        ))
+
+        c.send(JSON.stringify(
+            {
+                type: flag ? 'subscription' : 'unsubscription',
+                field: 'average',
+                threshold: 2222,
+                operator: '<'
+            }
+        ))
+
         c.send(JSON.stringify(
             {
                 type: flag ? 'subscription' : 'unsubscription',
                 field: 'fast',
-                threshold: 11,
+                threshold: 3333,
+                operator: '<='
+            }
+        ))
+        
+        c.send(JSON.stringify(
+            {
+                type: flag ? 'subscription' : 'unsubscription',
+                field: 'fastest',
+                threshold: 4444,
                 operator: '<'
             }
         ))
+
         flag = !flag
     }
 
