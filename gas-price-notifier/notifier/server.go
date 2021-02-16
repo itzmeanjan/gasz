@@ -158,20 +158,20 @@ func Start() {
 				//
 				// If yes, we need to get out of this execution loop, which will result in automatic
 				// closing of underlying network connection
-				var facedErrorInSwitchCase bool
+				var success bool
 
 				switch payload.Type {
 
 				case "subscription":
-					facedErrorInSwitchCase = subscriptionManager.Subscribe(&payload)
+					success = subscriptionManager.Subscribe(&payload)
 				case "unsubscription":
-					facedErrorInSwitchCase = subscriptionManager.Unsubscribe(&payload)
+					success = subscriptionManager.Unsubscribe(&payload)
 
 				}
 
 				// If we've faced any errors in switch case 👆
 				// we're just breaking out of loop
-				if facedErrorInSwitchCase {
+				if !success {
 					break
 				}
 
