@@ -1,6 +1,7 @@
 package notifier
 
 import (
+	"context"
 	"fmt"
 	"gas-price-notifier/config"
 	"gas-price-notifier/data"
@@ -103,15 +104,17 @@ func Start() {
 			// subscribe tp different price feeds using single connection
 			//
 			// They will receive notification as soon as any such criteria gets satisfied
-			subscriptions := make(map[string]*data.PriceSubscription)
-			lock := sync.Mutex{}
+			topicLock := &sync.RWMutex{}
+			connLock := &sync.Mutex{}
 
-			// Unsubscribing from all subscriptions, for this client
-			defer func() {
-				for _, v := range subscriptions {
-					v.Request.Type = "unsubscription"
-				}
-			}()
+			ctx, cancel := context.WithCancel(c.Request().Context())
+			defer cancel()
+
+			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
+
+			// This will ensure when client gets disconnected, their pubsub listener
+			// go routine will also exit i.e. by unsubscribing from pubsub topic
+			defer subscriptionManager.SudoUnsubscribe(ctx)
 
 			// Handling client request and responding accordingly
 			for {
@@ -120,9 +123,10 @@ func Start() {
 
 				// Reading JSON data from client
 				if err := conn.ReadJSON(&payload); err != nil {
+
 					log.Printf("[!] Failed to read data from client : %s\n", err.Error())
-					// In case, some error is faced, unlocking critical section here
 					break
+
 				}
 
 				// Validating client payload
@@ -131,16 +135,18 @@ func Start() {
 					log.Printf("[!] Invalid payload : %s\n", err.Error())
 
 					// -- Critical section code, starts
-					lock.Lock()
+					connLock.Lock()
 
 					if err := conn.WriteJSON(&data.ClientResponse{
 						Code:    0,
 						Message: "Bad Subscription Request",
 					}); err != nil {
+
 						log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
+
 					}
 
-					lock.Unlock()
+					connLock.Unlock()
 					// -- Critical section code, ends
 
 					break
@@ -152,78 +158,20 @@ func Start() {
 				//
 				// If yes, we need to get out of this execution loop, which will result in automatic
 				// closing of underlying network connection
-				var facedErrorInSwitchCase bool
+				var success bool
 
 				switch payload.Type {
 
 				case "subscription":
-
-					// Client has already subscribed to this event
-					_, ok := subscriptions[payload.String()]
-					if ok {
-						resp := data.ClientResponse{
-							Code:    0,
-							Message: "Already Subscribed",
-						}
-
-						// -- Critical section code, starts
-						lock.Lock()
-
-						if err := conn.WriteJSON(&resp); err != nil {
-							facedErrorInSwitchCase = true
-							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
-						}
-
-						lock.Unlock()
-						// -- Critical section code, ends
-
-						break
-					}
-
-					// Creating subscription entry for this client in associative array
-					//
-					// To be used in future when `unsubscription` request to be received
-					subscriptions[payload.String()] = data.NewPriceSubscription(c.Request().Context(), conn, &payload, redisClient, &lock)
-
+					success = subscriptionManager.Subscribe(&payload)
 				case "unsubscription":
-
-					// Client doesn't have any subscription
-					// for this event, so there's no question
-					// of unsubscription
-					subs, ok := subscriptions[payload.String()]
-					if !ok {
-						resp := data.ClientResponse{
-							Code:    0,
-							Message: "Not Subscribed",
-						}
-
-						// -- Critical section code, starts
-						lock.Lock()
-
-						if err := conn.WriteJSON(&resp); err != nil {
-							facedErrorInSwitchCase = true
-							log.Printf("[!] Failed to communicate with client : %s\n", err.Error())
-						}
-
-						lock.Unlock()
-						// -- Critical section code, ends
-
-						break
-					}
-
-					// Cancelling subscription
-					if subs != nil {
-						subs.Request.Type = "unsubscription"
-					}
-
-					// Removing subscription entry from associative array
-					delete(subscriptions, payload.String())
+					success = subscriptionManager.Unsubscribe(&payload)
 
 				}
 
 				// If we've faced any errors in switch case 👆
 				// we're just breaking out of loop
-				if facedErrorInSwitchCase {
+				if !success {
 					break
 				}
 

@@ -4,6 +4,12 @@ Ethereum Gas Price Notifier @ [gasz.in](https://gasz.in)
 
 ![banner](sc/banner.gif)
 
+**Update 🥳**
+
+As unconditional gas price update has been implemented to show recommended Ethereum Gas Price feed in real-time, we've updated webUI 👇
+
+![webUI](sc/webUI_4.png)
+
 ## Introduction
 
 While interacting with Ethereum Network I had to frequently visit `ethgasstation.info` for checking current `safeLow` gas price to decide when I can send transaction, which was really eating a lot of my time.
@@ -70,14 +76,14 @@ Once you do 👆, you'll be unsubscribed from gas price notification feed.
 
 You might also be interested in programmatically accessing Ethereum Gas Price data feed, for that consider sending a subscription request for certain category of gas price satisfying certain criteria.
 
-For example, let's say I'm waiting `fastest` tx gas price to go below 50 Gwei, I'll send a payload of form
+For example, let's say I'm waiting `fastest` tx gas price to go below 50 Gwei, I'll send a payload of form in JSON serialized form
 
-```js
+```json
 {
-    type: 'subscription',
-    field: 'fastest',
-    threshold: 50,
-    operator: '<'
+    "type": "subscription",
+    "field": "fastest",
+    "threshold": 50,
+    "operator": "<"
 }
 ```
 
@@ -89,11 +95,11 @@ Once gas price reaches that price, I'll receive response of form 👇, over webs
 
 `txType` can be any of _{`fast`, `fastest`, `average`, `safeLow`}_. And `price` is what you're interested in & it's in Gwei.
 
-```js
+```json
 {
-    txType: 'fast',
-    price: 45,
-    topic: 'fast : < 50'
+    "txType": "fastest",
+    "price": 43,
+    "topic": "fastest : < 50.000000"
 }
 ```
 
@@ -116,6 +122,10 @@ to `wss://gasz.in/v1/subscribe`.
 - `field` ∈ _{`fast`, `fastest`, `average`, `safeLow`}_
 - `threshold` > 0 _( in Gwei )_
 - `operator` ∈ `{<, >, <=, >=, ==}`
+
+> Note : You may want to check [example](./example).
+
+If you want to receive unconditional gas price updates, you should check [this example](https://github.com/itzmeanjan/gasz/blob/4759e74335288b31666547c628068c19675fa03b/example/index.js#L61-L69).
 
 ## Disclaimer
 

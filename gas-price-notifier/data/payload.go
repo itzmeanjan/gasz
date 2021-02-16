@@ -22,9 +22,9 @@ func (p *Payload) Validate() error {
 
 	return validation.ValidateStruct(p,
 		validation.Field(&p.Type, validation.Required, validation.In("subscription", "unsubscription")),
-		validation.Field(&p.Field, validation.Required, validation.In("fast", "fastest", "safeLow", "average")),
+		validation.Field(&p.Field, validation.Required, validation.In("fast", "fastest", "safeLow", "average", "*")),
 		validation.Field(&p.Threshold, validation.Required, validation.Min(1.0)),
-		validation.Field(&p.Operator, validation.Required, validation.In("<", ">", "<=", ">=", "==")))
+		validation.Field(&p.Operator, validation.Required, validation.In("<", ">", "<=", ">=", "==", "*")))
 
 }
 
