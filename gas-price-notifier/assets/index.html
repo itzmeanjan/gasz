@@ -109,11 +109,11 @@
         </form>
     </div>
     <div class="ui bottom visible sidebar" onclick="{
-        window.open('https://github.com/itzmeanjan/gasz', '_blank')
+        window.open('https://ethgasstation.info', '_blank')
     }">
         <div class="ui center aligned red container">
             <div class="ui raised text container">
-                <p id="live-price-feed" style="color: rgb(10, 10, 10); font-size: medium;"></p>
+                <p id="live-price-feed" style="color: rgb(1, 2, 3); font-size: large;"></p>
             </div>
         </div>
     </div>
@@ -170,7 +170,7 @@
 
                                 if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
 
-                                    document.getElementById('live-price-feed').innerHTML = `Fastest : ${msg['fastest']} Gwei | Fast : ${msg['fast']} Gwei | Average : ${msg['average']} Gwei | SafeLow : ${msg['safeLow']} Gwei`
+                                    document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${msg['fastest']} Gwei | Fast : ${msg['fast']} Gwei | Average : ${msg['average']} Gwei | SafeLow : ${msg['safeLow']} Gwei ⚡️`
                                     return
 
                                 }

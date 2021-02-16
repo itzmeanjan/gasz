@@ -1,14 +1,14 @@
 let socket
 let subscriptions = {}
 
+const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
+const connOpen = '[ `gasz` ] Connection Opened'
+const connClosed = '[ `gasz` ] Connection Closed'
+const connError = '[ `gasz` ] Error in connection'
+
 // Opens a new websocket connection to backend
 // for managing gas price subscriptions
 const createWebsocketConnection = _ => {
-
-    const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
-    const connOpen = '[ `gasz` ] Connection Opened'
-    const connClosed = '[ `gasz` ] Connection Closed'
-    const connError = '[ `gasz` ] Error in connection'
 
     return new Promise((res, rej) => {
 
@@ -53,19 +53,12 @@ const createWebsocketConnection = _ => {
             // -- Starting to handle subscription/ unsubsciption messages
             if ('code' in msg) {
 
-                // If this is a confirmation of all gas price update topic, we're
-                // not going to show it in UI, rather we're simply dropping it
-                //
-                // It's not user initiated action
-                if (msg['message'] === 'Subscribed to `* : * 1.000000`' || msg['message'] === 'Unsubscribed from `* : * 1.000000`') {
-                    return
-                }
-
                 this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
                     clients.forEach(client => client.postMessage(JSON.stringify(msg)))
                 })
 
                 return
+
             }
             // -- upto this point
 
@@ -89,14 +82,7 @@ const createWebsocketConnection = _ => {
 }
 
 this.addEventListener('activate', _ => {
-
-    // Checking whether already connected via websocket or not
-    //
-    // if not, new connection will be created
-    createWebsocketConnection()
-        .then(console.log)
-        .catch(console.error)
-
+    console.log('Service worker activated ✅')
 })
 
 this.addEventListener('message', m => {
