@@ -48,13 +48,23 @@ _client.on('connect', c => {
                 operator: '<='
             }
         ))
-        
+
         c.send(JSON.stringify(
             {
                 type: flag ? 'subscription' : 'unsubscription',
                 field: 'fastest',
                 threshold: 4444,
                 operator: '<'
+            }
+        ))
+
+        // Subscribe to all gas price updates
+        c.send(JSON.stringify(
+            {
+                type: flag ? 'subscription' : 'unsubscription',
+                field: '*',
+                threshold: 4444,
+                operator: '*'
             }
         ))
 
