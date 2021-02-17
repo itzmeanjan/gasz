@@ -74,8 +74,11 @@ _client.on('connect', c => {
     setInterval(handler, 10000)
     handler()
 
-    setInterval(_ => { c.ping(0x09) }, 14000)
-    c.ping(0x09)
+    c.on('ping', _ => {
+        console.log('received ping')
+        c.pong('')
+        console.log('sent pong')
+    })
 
 
 })
