@@ -1,0 +1,19 @@
+{
+  "name": "assets",
+  "version": "1.0.0",
+  "description": "",
+  "main": "semantic.min.js",
+  "scripts": {
+    "build": "browserify ./worker.js -o ./worker.build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^17.0.0"
+  },
+  "dependencies": {
+    "websocket": "^1.0.33"
+  }
+}
