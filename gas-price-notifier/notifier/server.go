@@ -108,12 +108,8 @@ func Start() {
 
 				conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
 
-				log.Println("received pong")
-
 				<-time.After(time.Duration(10) * time.Second)
 				conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second*time.Duration(1)))
-
-				log.Println("sent ping")
 
 				return nil
 
