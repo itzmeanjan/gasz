@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -64,7 +65,12 @@ func Start() {
 	})
 
 	v1 := handle.Group("/v1")
-	upgrader := websocket.Upgrader{}
+
+	// Max data can be present in read/ write buffer(s) at a time
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
 
 	{
 
@@ -94,6 +100,18 @@ func Start() {
 			// Scheduling graceful connection closing, to be invoked when
 			// getting out of this function's scope
 			defer conn.Close()
+
+			// Every 15 seconds ( at max ) client must send ping message
+			// to server, to let it know it's still alive
+			//
+			// Otherwise connection to be closed
+			conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
+			conn.SetPingHandler(func(appData string) error {
+
+				conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
+				return nil
+
+			})
 
 			// For each client connected over websocket, this associative
 			// array to be maintained, so that we can allow each client
