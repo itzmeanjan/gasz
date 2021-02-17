@@ -1,9 +1,11 @@
+const { client } = require('websocket')
+
+let _client
 let socket
 let subscriptions = {}
 
 const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
 const connOpen = '[ `gasz` ] Connection Opened'
-const connClosed = '[ `gasz` ] Connection Closed'
 const connError = '[ `gasz` ] Error in connection'
 
 // Opens a new websocket connection to backend
@@ -12,70 +14,85 @@ const createWebsocketConnection = _ => {
 
     return new Promise((res, rej) => {
 
-        if (socket && socket.readyState === socket.OPEN) {
+        if (!_client) {
+            _client = new client()
+        }
+
+        if (socket && socket.connected) {
             return res(connAlreadyOpen)
         }
 
-        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+        _client.connect(`ws://localhost:7000/v1/subscribe`, null)
 
-        // websocket connection is open now
-        socket.onopen = _ => {
-            return res(connOpen)
-        }
-
-        // connection with backend got closed
-        socket.onclose = _ => {
-            return rej(connClosed)
-        }
-
-        // due to some error encountered, closing connection with backend
-        socket.onerror = _ => {
-            socket.close()
-
+        _client.on('connectFailed', _ => {
+            socket = null
             return rej(connError)
-        }
+        })
 
-        // Handling case when message being received from server
-        socket.onmessage = e => {
-            // data received from server
-            const msg = JSON.parse(e.data)
+        _client.on('connect', c => {
 
-            if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
+            socket = c
 
-                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-                })
-
-                return
-
-            }
-
-            // -- Starting to handle subscription/ unsubsciption messages
-            if ('code' in msg) {
-
-                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-                })
-
-                return
-
-            }
-            // -- upto this point
-
-            this.registration.showNotification('Gasz ⚡️', {
-                body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
-                icon: 'gasz.png',
-                tag: msg['topic'],
-                requireInteraction: true,
-                vibrate: [200, 100, 200],
-                actions: [
-                    {
-                        action: 'unsubscribe',
-                        title: 'Unsubscribe'
-                    }
-                ]
+            socket.on('close', d => {
+                socket = null
+                console.log(`[!] Closed connection : ${d}`)
             })
-        }
+
+            // receiving json encoded message
+            socket.on('message', d => {
+
+                // data received from server
+                const msg = JSON.parse(d.utf8Data)
+
+                if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
+
+                    this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                        clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+                    })
+
+                    return
+
+                }
+
+                // -- Starting to handle subscription/ unsubsciption messages
+                if ('code' in msg) {
+
+                    this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                        clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+                    })
+
+                    return
+
+                }
+                // -- upto this point
+
+                this.registration.showNotification('Gasz ⚡️', {
+                    body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
+                    icon: 'gasz.png',
+                    tag: msg['topic'],
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200],
+                    actions: [
+                        {
+                            action: 'unsubscribe',
+                            title: 'Unsubscribe'
+                        }
+                    ]
+                })
+
+            })
+
+            // Server will send `ping` messages
+            // to check health of connection
+            socket.on('ping', _ => {
+                // In response of that message, client
+                // must send `pong` message
+                socket.pong('')
+            })
+
+            return res(connOpen)
+
+        })
 
     })
 
