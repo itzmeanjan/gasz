@@ -3,8 +3,6 @@ let subscriptions = {}
 
 const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
 const connOpen = '[ `gasz` ] Connection Opened'
-const connClosed = '[ `gasz` ] Connection Closed'
-const connError = '[ `gasz` ] Error in connection'
 
 // Opens a new websocket connection to backend
 // for managing gas price subscriptions
@@ -25,14 +23,22 @@ const createWebsocketConnection = _ => {
 
         // connection with backend got closed
         socket.onclose = _ => {
-            return rej(connClosed)
+            console.log('closed connection')
+
+            socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+
+            socket.send(JSON.stringify({
+                type: 'subscription',
+                field: txSpeed,
+                operator,
+                threshold: parseFloat(gasPrice)
+            }))
         }
 
         // due to some error encountered, closing connection with backend
         socket.onerror = _ => {
             socket.close()
-
-            return rej(connError)
+            console.log('error in connection')
         }
 
         // Handling case when message being received from server
@@ -87,19 +93,12 @@ this.addEventListener('activate', _ => {
 
 this.addEventListener('message', m => {
     createWebsocketConnection()
-        .then(v => {
+        .then(async v => {
             console.log(v)
 
+            await socket.send(m.data)
+
             const parsed = JSON.parse(m.data)
-            if (parsed['field'] === '*' && parsed['operator'] === '*' && `${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}` in subscriptions) {
-
-                console.log('Already subscribed to it')
-                return
-
-            }
-
-            socket.send(m.data)
-
             subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
         })
         .catch(console.error)
@@ -137,17 +136,18 @@ this.addEventListener('notificationclick', async e => {
     // is/ are concerned with this topic for which user just
     // received notification from server & also clicked on it,
     // we're going to simply unsubscribe from
-    Object.entries(subscriptions)
-        .map(([k, v]) => [parseSubscriptionTopic(k), v])
-        .filter(([_, v]) => checkEqualityOfTopics(parsedTag, v))
-        .forEach(([_, v]) => {
+    await Promise.all(
+        Object.entries(subscriptions)
+            .map(([k, v]) => [parseSubscriptionTopic(k), v])
+            .filter(([_, v]) => checkEqualityOfTopics(parsedTag, v))
+            .map(([_, v]) => {
 
-            socket.send(JSON.stringify({
-                ...v,
-                type: 'unsubscription'
+                return socket.send(JSON.stringify({
+                    ...v,
+                    type: 'unsubscription'
+                }))
+
             }))
-
-        })
 
 })
 
