@@ -74,6 +74,10 @@ _client.on('connect', c => {
     setInterval(handler, 10000)
     handler()
 
+    setInterval(_ => { c.ping(0x09) }, 14000)
+    c.ping(0x09)
+
+
 })
 
 _client.connect('ws://localhost:7000/v1/subscribe', null)
