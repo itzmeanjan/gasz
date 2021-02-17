@@ -101,14 +101,20 @@ func Start() {
 			// getting out of this function's scope
 			defer conn.Close()
 
-			// Every 15 seconds ( at max ) client must send ping message
-			// to server, to let it know it's still alive
-			//
-			// Otherwise connection to be closed
-			conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
-			conn.SetPingHandler(func(appData string) error {
+			conn.SetReadDeadline(time.Now().Add(time.Duration(5) * time.Second))
+
+			conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second*time.Duration(1)))
+			conn.SetPongHandler(func(appData string) error {
 
 				conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
+
+				log.Println("received pong")
+
+				<-time.After(time.Duration(10) * time.Second)
+				conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second*time.Duration(1)))
+
+				log.Println("sent ping")
+
 				return nil
 
 			})
