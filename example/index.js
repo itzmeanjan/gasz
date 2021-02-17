@@ -74,10 +74,12 @@ _client.on('connect', c => {
     setInterval(handler, 10000)
     handler()
 
+    // Server will send `ping` messages
+    // to check health of connection
     c.on('ping', _ => {
-        console.log('received ping')
+        // In response of that message, client
+        // must send `pong` message
         c.pong('')
-        console.log('sent pong')
     })
 
 
