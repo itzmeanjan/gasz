@@ -90,16 +90,10 @@ this.addEventListener('message', m => {
         .then(v => {
             console.log(v)
 
-            const parsed = JSON.parse(m.data)
-            if (parsed['field'] === '*' && parsed['operator'] === '*' && `${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}` in subscriptions) {
-
-                console.log('Already subscribed to it')
-                return
-
-            }
-
+            // sending message over websocket to remote
             socket.send(m.data)
 
+            const parsed = JSON.parse(m.data)
             subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
         })
         .catch(console.error)
