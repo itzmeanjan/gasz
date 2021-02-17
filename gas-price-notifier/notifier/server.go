@@ -61,7 +61,7 @@ func Start() {
 	})
 
 	handle.GET("/worker.js", func(c echo.Context) error {
-		return c.File("assets/worker.build.js")
+		return c.File("assets/worker.js")
 	})
 
 	v1 := handle.Group("/v1")
