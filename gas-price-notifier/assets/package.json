@@ -11,9 +11,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "browserify": "^17.0.0"
-  },
-  "dependencies": {
+    "browserify": "^17.0.0",
     "websocket": "^1.0.33"
-  }
+  },
+  "dependencies": {}
 }
