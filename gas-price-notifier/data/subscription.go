@@ -7,6 +7,7 @@ import (
 	"gas-price-notifier/config"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -19,12 +20,13 @@ import (
 // Functions defined on this struct, are supposed to be invoked for subscribing to and unsubscribing from
 // Redis pubsub topic, where price feed data is being published
 type PriceSubscription struct {
-	Client    *websocket.Conn
-	Redis     *redis.Client
-	PubSub    *redis.PubSub
-	Topics    map[string]*Payload
-	TopicLock *sync.RWMutex
-	ConnLock  *sync.Mutex
+	Client         *websocket.Conn
+	Redis          *redis.Client
+	PubSub         *redis.PubSub
+	Topics         map[string]*Payload
+	TopicLock      *sync.RWMutex
+	ConnLock       *sync.Mutex
+	TrafficCounter *WSTraffic
 }
 
 // Subscribe - Subscribing to Redis pubsub channel
@@ -66,6 +68,9 @@ func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
+		// Incremented how many messages are sent to client
+		atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 		return status
 
 	}
@@ -101,6 +106,9 @@ func (ps *PriceSubscription) Subscribe(req *Payload) bool {
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	// Incremented how many messages are sent to client
+	atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 	return status
 
@@ -138,6 +146,9 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 		ps.ConnLock.Unlock()
 		// -- Critical section code, ends
 
+		// Incremented how many messages are sent to client
+		atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 		return status
 
 	}
@@ -173,6 +184,9 @@ func (ps *PriceSubscription) Unsubscribe(req *Payload) bool {
 
 	ps.ConnLock.Unlock()
 	// -- Critical section code, ends
+
+	// Incremented how many messages are sent to client
+	atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 	return status
 
@@ -269,6 +283,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 				// -- Critical section of code, ends
 				ps.ConnLock.Unlock()
 
+				// Incremented how many messages are sent to client
+				atomic.AddUint64(&ps.TrafficCounter.Write, 1)
+
 			}
 
 			// If not satisfying criteria, then we're not attempting to deliver
@@ -306,6 +323,9 @@ func (ps *PriceSubscription) Listen(ctx context.Context) {
 
 			// -- Critical section of code, ends
 			ps.ConnLock.Unlock()
+
+			// Incremented how many messages are sent to client
+			atomic.AddUint64(&ps.TrafficCounter.Write, 1)
 
 		}
 
@@ -461,15 +481,16 @@ func (ps *PriceSubscription) GetClientResponse(published *PubSubPayload, request
 //
 // Whether client will receive notification that depends on whether received price value
 // satisfies criteria set by client
-func NewPriceSubscription(ctx context.Context, client *websocket.Conn, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex) *PriceSubscription {
+func NewPriceSubscription(ctx context.Context, client *websocket.Conn, redisClient *redis.Client, topicLock *sync.RWMutex, connLock *sync.Mutex, trafficCounter *WSTraffic) *PriceSubscription {
 
 	ps := PriceSubscription{
-		Client:    client,
-		Redis:     redisClient,
-		PubSub:    redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
-		Topics:    make(map[string]*Payload),
-		TopicLock: topicLock,
-		ConnLock:  connLock,
+		Client:         client,
+		Redis:          redisClient,
+		PubSub:         redisClient.Subscribe(ctx, config.Get("RedisPubSubChannel")),
+		Topics:         make(map[string]*Payload),
+		TopicLock:      topicLock,
+		ConnLock:       connLock,
+		TrafficCounter: trafficCounter,
 	}
 
 	// Running listener i.e. subscriber in different execution thread

@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -21,9 +23,7 @@ func Start() {
 	redisClient := pubsub.Connect()
 	defer redisClient.Close()
 
-	connCount := data.SafeActiveConnections{
-		Lock:        &sync.RWMutex{},
-		Connections: &data.ActiveConnections{Count: 0}}
+	connCount := &data.ActiveConnections{Count: 0}
 
 	handle := echo.New()
 
@@ -65,19 +65,21 @@ func Start() {
 	})
 
 	v1 := handle.Group("/v1")
-	upgrader := websocket.Upgrader{}
+
+	// Max data can be present in read/ write buffer(s) at a time
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
 
 	{
 
 		v1.GET("/stat", func(c echo.Context) error {
 
-			connCount.Lock.RLock()
-			defer connCount.Lock.RUnlock()
-
 			return c.JSON(http.StatusOK, struct {
 				Active uint64 `json:"active"`
 			}{
-				Active: connCount.Connections.Count,
+				Active: connCount.Count,
 			})
 		})
 
@@ -99,6 +101,20 @@ func Start() {
 			// getting out of this function's scope
 			defer conn.Close()
 
+			conn.SetReadDeadline(time.Now().Add(time.Duration(5) * time.Second))
+
+			conn.WriteControl(websocket.PingMessage, []byte{0x9}, time.Now().Add(time.Second*time.Duration(1)))
+			conn.SetPongHandler(func(appData string) error {
+
+				conn.SetReadDeadline(time.Now().Add(time.Duration(15) * time.Second))
+
+				<-time.After(time.Duration(10) * time.Second)
+				conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second*time.Duration(1)))
+
+				return nil
+
+			})
+
 			// For each client connected over websocket, this associative
 			// array to be maintained, so that we can allow each client
 			// subscribe tp different price feeds using single connection
@@ -110,7 +126,19 @@ func Start() {
 			ctx, cancel := context.WithCancel(c.Request().Context())
 			defer cancel()
 
-			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock)
+			// Initializing traffic counter for this connection
+			//
+			// Will keep track of how many read/ write message op(s)
+			// happened during connection lifetime
+			trafficCounter := &data.WSTraffic{Read: 0, Write: 0}
+
+			defer func() {
+
+				log.Printf("[✅] Closing websocket connection [ Read : %d | Write : %d ]\n", trafficCounter.Read, trafficCounter.Write)
+
+			}()
+
+			subscriptionManager := data.NewPriceSubscription(ctx, conn, redisClient, topicLock, connLock, trafficCounter)
 
 			// This will ensure when client gets disconnected, their pubsub listener
 			// go routine will also exit i.e. by unsubscribing from pubsub topic
@@ -128,6 +156,9 @@ func Start() {
 					break
 
 				}
+
+				// Incremented how many messages are received from client
+				atomic.AddUint64(&trafficCounter.Read, 1)
 
 				// Validating client payload
 				if err := payload.Validate(); err != nil {
@@ -148,6 +179,9 @@ func Start() {
 
 					connLock.Unlock()
 					// -- Critical section code, ends
+
+					// Incremented how many messages are sent to client
+					atomic.AddUint64(&trafficCounter.Write, 1)
 
 					break
 

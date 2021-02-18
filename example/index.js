@@ -74,6 +74,15 @@ _client.on('connect', c => {
     setInterval(handler, 10000)
     handler()
 
+    // Server will send `ping` messages
+    // to check health of connection
+    c.on('ping', _ => {
+        // In response of that message, client
+        // must send `pong` message
+        c.pong('')
+    })
+
+
 })
 
 _client.connect('ws://localhost:7000/v1/subscribe', null)
