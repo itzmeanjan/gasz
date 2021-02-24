@@ -22,6 +22,12 @@
                 <h2 class="ui header">Ethereum Gas Price Notification</h2>
             </div>
 
+            <div class="ui raised very padded center aligned container" style="padding-bottom: 20px; padding-top: 20px;">
+                <div class="ui raised text container">
+                    <p id="live-price-feed" style="color: rgb(198, 221, 255); font-size: large;"></p>
+                </div>
+            </div>
+
             <div class="field">
                 <label>Transaction Speed :</label>
                 <div class="ui search selection dropdown">
@@ -107,15 +113,6 @@
                 Add Gas Price Subscription
             </div>
         </form>
-    </div>
-    <div class="ui bottom visible sidebar" onclick="{
-        window.open('https://ethgasstation.info', '_blank')
-    }">
-        <div class="ui center aligned red container">
-            <div class="ui raised text container">
-                <p id="live-price-feed" style="color: rgb(1, 2, 3); font-size: large;"></p>
-            </div>
-        </div>
     </div>
     <div class="ui page dimmer subscription success" onclick="$('.page.dimmer.subscription.success').dimmer('toggle')">
         <div class="content">
