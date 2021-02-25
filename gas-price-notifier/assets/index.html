@@ -148,6 +148,28 @@
     </div>
     <script>
         const setup = _ => {
+
+            // Setting up periodic call for latest gas price, even
+            // if websocket connection fails ( which is managed by service worker )
+            // it'll work as a back up
+            setInterval(async _ => {
+
+                try {
+
+                    const resp = await fetch('http://localhost:7000/v1/latest')
+
+                    if(resp.status != 200) { return }
+
+                    const body = await resp.json()
+
+                    document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${body['fastest']} Gwei | Fast : ${body['fast']} Gwei | Average : ${body['average']} Gwei | SafeLow : ${body['safeLow']} Gwei 🐢`
+
+                } catch(e) {
+                    console.error(e)
+                }
+
+            }, 5000)
+
             if (!('Notification' in window)) {
                 alert('Browser doesn\'t support Notification 🙂')
                 return

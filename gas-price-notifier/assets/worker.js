@@ -75,14 +75,6 @@ this.addEventListener('activate', _ => {
 
 this.addEventListener('message', async m => {
 
-    if (!(socket && socket.readyState === socket.OPEN)) {
-
-        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
-        // wait for 2000 ms to get the connection established
-        setTimeout(_ => { }, 2000)
-
-    }
-
     // If connection is open
     if (socket && socket.readyState === socket.OPEN) {
 
