@@ -29,7 +29,7 @@ OUTER:
 
 			if err := pubsub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
 
-				log.Printf("[!] Failed to unsubscribe : %s\n", err.Error())
+				log.Printf("[❌] Failed to unsubscribe : %s\n", err.Error())
 
 			}
 			break OUTER
@@ -47,14 +47,14 @@ OUTER:
 
 				if m.Kind == "subscribe" {
 
-					log.Printf(fmt.Sprintf("[*] Subscribed to %s\n", config.Get("RedisPubSubChannel")))
+					log.Printf(fmt.Sprintf("[✅] Subscribed to %s\n", config.Get("RedisPubSubChannel")))
 					break INNER
 
 				}
 
 				if m.Kind == "unsubscribe" {
 
-					log.Printf(fmt.Sprintf("[*] Unsubscribed from %s\n", config.Get("RedisPubSubChannel")))
+					log.Printf(fmt.Sprintf("[❌] Unsubscribed from %s\n", config.Get("RedisPubSubChannel")))
 					break OUTER
 
 				}
@@ -66,7 +66,7 @@ OUTER:
 
 				if err := json.Unmarshal(_msg, &pubsubPayload); err != nil {
 
-					log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
+					log.Printf("[❌] Failed to decode received data from pubsub channel : %s\n", err.Error())
 					break OUTER
 				}
 
