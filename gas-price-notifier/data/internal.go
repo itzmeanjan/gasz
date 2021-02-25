@@ -68,6 +68,7 @@ OUTER:
 
 					log.Printf("[❌] Failed to decode received data from pubsub channel : %s\n", err.Error())
 					break OUTER
+
 				}
 
 				// Update gas price to latest
