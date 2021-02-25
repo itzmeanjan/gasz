@@ -14,16 +14,21 @@ import (
 
 // Entry point of program
 func main() {
+
 	absPath, err := filepath.Abs(".env")
 	if err != nil {
+
 		log.Fatalf("[!] Failed find `.env` file : %s\n", err.Error())
+
 	}
 
 	if err := config.Load(absPath); err != nil {
+
 		log.Fatalf("[!] Failed load `.env` file : %s\n", err.Error())
+
 	}
 
-	_, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(context.TODO())
 
 	// Attempt to catch interrupt event(s)
 	// so that graceful shutdown can be performed
@@ -53,5 +58,6 @@ func main() {
 
 	}()
 
-	notifier.Start()
+	notifier.Start(ctx)
+
 }
