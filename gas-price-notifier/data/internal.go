@@ -21,43 +21,59 @@ func SubscribeToPriceFeed(ctx context.Context, redisClient *redis.Client, latest
 OUTER:
 	for {
 
-		msg, err := pubsub.ReceiveTimeout(ctx, time.Second)
-		if err != nil {
-			continue
-		}
-
 	INNER:
-		switch m := msg.(type) {
+		select {
 
-		case *redis.Subscription:
+		// If caller context is cancelled, we can unsubscribe
+		case <-ctx.Done():
 
-			if m.Kind == "subscribe" {
+			if err := pubsub.Unsubscribe(ctx, config.Get("RedisPubSubChannel")); err != nil {
 
-				log.Printf(fmt.Sprintf("[*] Subscribed to %s\n", config.Get("RedisPubSubChannel")))
-				break INNER
-
-			}
-
-			if m.Kind == "unsubscribe" {
-
-				log.Printf(fmt.Sprintf("[*] Unsubscribed from %s\n", config.Get("RedisPubSubChannel")))
-				break OUTER
+				log.Printf("[!] Failed to unsubscribe : %s\n", err.Error())
 
 			}
+			break OUTER
 
-		case *redis.Message:
+		default:
 
-			var pubsubPayload PubSubPayload
-			_msg := []byte(m.Payload)
-
-			if err := json.Unmarshal(_msg, &pubsubPayload); err != nil {
-
-				log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
-				break OUTER
+			msg, err := pubsub.ReceiveTimeout(ctx, time.Second)
+			if err != nil {
+				continue
 			}
 
-			// Update gas price to latest
-			latestGasPrice.Put(&pubsubPayload)
+			switch m := msg.(type) {
+
+			case *redis.Subscription:
+
+				if m.Kind == "subscribe" {
+
+					log.Printf(fmt.Sprintf("[*] Subscribed to %s\n", config.Get("RedisPubSubChannel")))
+					break INNER
+
+				}
+
+				if m.Kind == "unsubscribe" {
+
+					log.Printf(fmt.Sprintf("[*] Unsubscribed from %s\n", config.Get("RedisPubSubChannel")))
+					break OUTER
+
+				}
+
+			case *redis.Message:
+
+				var pubsubPayload PubSubPayload
+				_msg := []byte(m.Payload)
+
+				if err := json.Unmarshal(_msg, &pubsubPayload); err != nil {
+
+					log.Printf("[!] Failed to decode received data from pubsub channel : %s\n", err.Error())
+					break OUTER
+				}
+
+				// Update gas price to latest
+				latestGasPrice.Put(&pubsubPayload)
+
+			}
 
 		}
 
