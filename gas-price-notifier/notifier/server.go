@@ -24,6 +24,7 @@ func Start() {
 	defer redisClient.Close()
 
 	connCount := &data.ActiveConnections{Count: 0}
+	latestGasPrice := &data.GasPrice{Latest: &data.PubSubPayload{}, Lock: &sync.RWMutex{}}
 
 	handle := echo.New()
 
@@ -81,6 +82,13 @@ func Start() {
 			}{
 				Active: connCount.Count,
 			})
+		})
+
+		// End point for reading latest recommended gas price
+		v1.GET("/latest", func(c echo.Context) error {
+
+			return c.JSON(http.StatusOK, latestGasPrice.Get())
+
 		})
 
 		v1.GET("/subscribe", func(c echo.Context) error {
