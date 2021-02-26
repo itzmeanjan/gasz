@@ -26,60 +26,56 @@ this.addEventListener('activate', _ => {
 
 this.addEventListener('message', async m => {
 
-    createNewConnection().then(v => {
+    console.log(await createNewConnection())
 
-        console.log(v)
+    // connection with backend got closed
+    socket.onclose = _ => {
+        socket = null
+        console.log('closed connection')
+    }
 
-        // connection with backend got closed
-        socket.onclose = _ => {
-            socket = null
-            console.log('closed connection')
-        }
+    // due to some error encountered, closing connection with backend
+    socket.onerror = _ => {
+        socket.close()
+        console.log('error in connection')
+    }
 
-        // due to some error encountered, closing connection with backend
-        socket.onerror = _ => {
-            socket.close()
-            console.log('error in connection')
-        }
+    // Handling case when message being received from server
+    socket.onmessage = e => {
+        // data received from server
+        const msg = JSON.parse(e.data)
 
-        // Handling case when message being received from server
-        socket.onmessage = e => {
-            // data received from server
-            const msg = JSON.parse(e.data)
+        // -- Starting to handle subscription/ unsubsciption messages
+        if ('code' in msg) {
 
-            // -- Starting to handle subscription/ unsubsciption messages
-            if ('code' in msg) {
-
-                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-                })
-
-                return
-
-            }
-            // -- upto this point
-
-            this.registration.showNotification('Gasz ⚡️', {
-                body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
-                icon: 'gasz.png',
-                tag: msg['topic'],
-                requireInteraction: true,
-                vibrate: [200, 100, 200],
-                actions: [
-                    {
-                        action: 'unsubscribe',
-                        title: 'Unsubscribe'
-                    }
-                ]
+            this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                clients.forEach(client => client.postMessage(JSON.stringify(msg)))
             })
+
+            return
+
         }
+        // -- upto this point
 
-        await socket.send(m.data)
+        this.registration.showNotification('Gasz ⚡️', {
+            body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
+            icon: 'gasz.png',
+            tag: msg['topic'],
+            requireInteraction: true,
+            vibrate: [200, 100, 200],
+            actions: [
+                {
+                    action: 'unsubscribe',
+                    title: 'Unsubscribe'
+                }
+            ]
+        })
+    }
 
-        const parsed = JSON.parse(m.data)
-        subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
+    await socket.send(m.data)
 
-    })
+    const parsed = JSON.parse(m.data)
+    subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
 
 })
 
