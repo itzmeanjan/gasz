@@ -187,15 +187,8 @@
                                 
                                 const msg = JSON.parse(m.data)
 
-                                if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
-
-                                    document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${msg['fastest']} Gwei | Fast : ${msg['fast']} Gwei | Average : ${msg['average']} Gwei | SafeLow : ${msg['safeLow']} Gwei 🐢`
-                                    return
-
-                                }
-
                                 // -- Staring to handle subscription/ unsubsciption messages
-                                if ('code' in msg){
+                                if ('code' in msg) {
                                     if(msg['code'] !== 1) {
                                         if (msg['message'] === 'Already Subscribed') {
 
@@ -233,15 +226,6 @@
 
                             navigator.serviceWorker.ready.then(reg => { 
                                 window.Service_Worker = reg.active
-
-                                console.log('Attempting to subscribe to live gas price feed topic')
-
-                                Service_Worker.postMessage(JSON.stringify({
-                                    type: 'subscription',
-                                    field: '*',
-                                    operator: '*',
-                                    threshold: 1.0
-                                }))
                             })
 
                         }
