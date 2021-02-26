@@ -18,12 +18,17 @@ import (
 )
 
 // Start - Manages whole lifecycle of backend application
-func Start() {
+func Start(ctx context.Context) {
 
 	redisClient := pubsub.Connect()
 	defer redisClient.Close()
 
 	connCount := &data.ActiveConnections{Count: 0}
+	latestGasPrice := &data.GasPrice{Latest: &data.PubSubPayload{}, Lock: &sync.RWMutex{}}
+
+	// Spawning go routine, for receiving latest gas price feed &
+	// safely updating it in shared memory location
+	go data.SubscribeToPriceFeed(ctx, redisClient, latestGasPrice)
 
 	handle := echo.New()
 
@@ -81,6 +86,13 @@ func Start() {
 			}{
 				Active: connCount.Count,
 			})
+		})
+
+		// End point for reading latest recommended gas price
+		v1.GET("/latest", func(c echo.Context) error {
+
+			return c.JSON(http.StatusOK, latestGasPrice.Get())
+
 		})
 
 		v1.GET("/subscribe", func(c echo.Context) error {

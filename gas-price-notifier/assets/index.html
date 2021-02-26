@@ -109,6 +109,8 @@
 
                 }
 
+                $('form').form('clear')
+
             }">
                 Add Gas Price Subscription
             </div>
@@ -148,6 +150,40 @@
     </div>
     <script>
         const setup = _ => {
+
+            // Setting up periodic call for latest gas price, even
+            // if websocket connection fails ( which is managed by service worker )
+            // it'll work as a back up
+            window.PollingGasZ = {
+                handler: setInterval(async _ => {
+
+                            try {
+
+                                const resp = await fetch('http://localhost:7000/v1/latest')
+
+                                if(resp.status != 200) { return }
+
+                                const body = await resp.json()
+
+                                document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${body['fastest']} Gwei | Fast : ${body['fast']} Gwei | Average : ${body['average']} Gwei | SafeLow : ${body['safeLow']} Gwei 🐢`
+
+                            } catch(e) {
+
+                                window.PollingGasZ.failure++
+
+                                if(window.PollingGasZ.failure >= 3) {
+                                    clearInterval(window.PollingGasZ.handler)
+                                    return
+                                }
+
+                                console.error(e.toString())
+
+                            }
+
+                        }, 5000),
+                failure: 0
+            }
+
             if (!('Notification' in window)) {
                 alert('Browser doesn\'t support Notification 🙂')
                 return
@@ -165,19 +201,11 @@
                                 
                                 const msg = JSON.parse(m.data)
 
-                                if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
-
-                                    document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${msg['fastest']} Gwei | Fast : ${msg['fast']} Gwei | Average : ${msg['average']} Gwei | SafeLow : ${msg['safeLow']} Gwei 🐢`
-                                    return
-
-                                }
-
                                 // -- Staring to handle subscription/ unsubsciption messages
-                                if ('code' in msg){
+                                if ('code' in msg) {
                                     if(msg['code'] !== 1) {
                                         if (msg['message'] === 'Already Subscribed') {
 
-                                            $('form').form('clear')
                                             $('.page.dimmer.subscription.failure').dimmer('toggle')
                                             setTimeout(_ => {
                                                 $('.page.dimmer.subscription.failure').dimmer('toggle')
@@ -192,7 +220,6 @@
                                     } else {
                                         if (msg['message'].includes('Subscribed')) {
 
-                                            $('form').form('clear')
                                             $('.page.dimmer.subscription.success').dimmer('toggle')
                                             setTimeout(_ => {
                                                 $('.page.dimmer.subscription.success').dimmer('toggle')
@@ -211,15 +238,6 @@
 
                             navigator.serviceWorker.ready.then(reg => { 
                                 window.Service_Worker = reg.active
-
-                                console.log('Attempting to subscribe to live gas price feed topic')
-
-                                Service_Worker.postMessage(JSON.stringify({
-                                    type: 'subscription',
-                                    field: '*',
-                                    operator: '*',
-                                    threshold: 1.0
-                                }))
                             })
 
                         }

@@ -4,104 +4,79 @@ let subscriptions = {}
 const connAlreadyOpen = '[ `gasz` ] Connection Already Open'
 const connOpen = '[ `gasz` ] Connection Opened'
 
-// Opens a new websocket connection to backend
-// for managing gas price subscriptions
-const createWebsocketConnection = _ => {
+// Attempts to create new websocket connection, if not one is already open
+const createNewConnection = _ => new Promise((res, _) => {
 
-    return new Promise((res, rej) => {
+    if (socket && socket.readyState === socket.OPEN) {
+        res(connAlreadyOpen)
+    }
 
-        if (socket && socket.readyState === socket.OPEN) {
-            return res(connAlreadyOpen)
-        }
+    socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
 
-        socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
+    // websocket connection is open now
+    socket.onopen = _ => {
+        res(connOpen)
+    }
 
-        // websocket connection is open now
-        socket.onopen = _ => {
-            return res(connOpen)
-        }
-
-        // connection with backend got closed
-        socket.onclose = _ => {
-            console.log('closed connection')
-
-            socket = new WebSocket(`ws://localhost:7000/v1/subscribe`)
-
-            socket.send(JSON.stringify({
-                type: 'subscription',
-                field: txSpeed,
-                operator,
-                threshold: parseFloat(gasPrice)
-            }))
-        }
-
-        // due to some error encountered, closing connection with backend
-        socket.onerror = _ => {
-            socket.close()
-            console.log('error in connection')
-        }
-
-        // Handling case when message being received from server
-        socket.onmessage = e => {
-            // data received from server
-            const msg = JSON.parse(e.data)
-
-            if ('fast' in msg && 'fastest' in msg && 'safeLow' in msg && 'average' in msg) {
-
-                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-                })
-
-                return
-
-            }
-
-            // -- Starting to handle subscription/ unsubsciption messages
-            if ('code' in msg) {
-
-                this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-                    clients.forEach(client => client.postMessage(JSON.stringify(msg)))
-                })
-
-                return
-
-            }
-            // -- upto this point
-
-            this.registration.showNotification('Gasz ⚡️', {
-                body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
-                icon: 'gasz.png',
-                tag: msg['topic'],
-                requireInteraction: true,
-                vibrate: [200, 100, 200],
-                actions: [
-                    {
-                        action: 'unsubscribe',
-                        title: 'Unsubscribe'
-                    }
-                ]
-            })
-        }
-
-    })
-
-}
+})
 
 this.addEventListener('activate', _ => {
     console.log('Service worker activated ✅')
 })
 
-this.addEventListener('message', m => {
-    createWebsocketConnection()
-        .then(async v => {
-            console.log(v)
+this.addEventListener('message', async m => {
 
-            await socket.send(m.data)
+    console.log(await createNewConnection())
 
-            const parsed = JSON.parse(m.data)
-            subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
+    // connection with backend got closed
+    socket.onclose = _ => {
+        socket = null
+        console.log('closed connection')
+    }
+
+    // due to some error encountered, closing connection with backend
+    socket.onerror = _ => {
+        socket.close()
+        console.log('error in connection')
+    }
+
+    // Handling case when message being received from server
+    socket.onmessage = e => {
+        // data received from server
+        const msg = JSON.parse(e.data)
+
+        // -- Starting to handle subscription/ unsubsciption messages
+        if ('code' in msg) {
+
+            this.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+                clients.forEach(client => client.postMessage(JSON.stringify(msg)))
+            })
+
+            return
+
+        }
+        // -- upto this point
+
+        this.registration.showNotification('Gasz ⚡️', {
+            body: `Gas Price for ${msg['txType'].slice(0, 1).toUpperCase() + msg['txType'].slice(1)} transaction just reached ${msg['price']} Gwei`,
+            icon: 'gasz.png',
+            tag: msg['topic'],
+            requireInteraction: true,
+            vibrate: [200, 100, 200],
+            actions: [
+                {
+                    action: 'unsubscribe',
+                    title: 'Unsubscribe'
+                }
+            ]
         })
-        .catch(console.error)
+    }
+
+    await socket.send(m.data)
+
+    const parsed = JSON.parse(m.data)
+    subscriptions[`${parsed['field']} : ${parsed['operator']} ${parsed['threshold']}`] = parsed
+
 })
 
 this.addEventListener('notificationclick', async e => {
