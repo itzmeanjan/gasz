@@ -152,23 +152,35 @@
             // Setting up periodic call for latest gas price, even
             // if websocket connection fails ( which is managed by service worker )
             // it'll work as a back up
-            setInterval(async _ => {
+            window.PollingGasZ = {
+                handler: setInterval(async _ => {
 
-                try {
+                            try {
 
-                    const resp = await fetch('http://localhost:7000/v1/latest')
+                                const resp = await fetch('http://localhost:7000/v1/latest')
 
-                    if(resp.status != 200) { return }
+                                if(resp.status != 200) { return }
 
-                    const body = await resp.json()
+                                const body = await resp.json()
 
-                    document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${body['fastest']} Gwei | Fast : ${body['fast']} Gwei | Average : ${body['average']} Gwei | SafeLow : ${body['safeLow']} Gwei 🐢`
+                                document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${body['fastest']} Gwei | Fast : ${body['fast']} Gwei | Average : ${body['average']} Gwei | SafeLow : ${body['safeLow']} Gwei 🐢`
 
-                } catch(e) {
-                    console.error(e)
-                }
+                            } catch(e) {
 
-            }, 5000)
+                                window.PollingGasZ.failure++
+
+                                if(window.PollingGasZ.failure == 3) {
+                                    clearInterval(window.PollingGasZ)
+                                    return
+                                }
+
+                                console.error(e.toString())
+
+                            }
+
+                        }, 5000),
+                failure: 0
+            }
 
             if (!('Notification' in window)) {
                 alert('Browser doesn\'t support Notification 🙂')
