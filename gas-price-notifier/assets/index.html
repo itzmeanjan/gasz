@@ -151,21 +151,38 @@
     <script>
         const setup = _ => {
 
-            // Setting up periodic call for latest gas price, even
-            // if websocket connection fails ( which is managed by service worker )
-            // it'll work as a back up
+            // Query latest gas price recommendation
+            const getLatestGasPrice = _ => new Promise(async (res, rej) => {
+
+                try {
+                    const resp = await fetch('http://localhost:7000/v1/latest')
+
+                    if(resp.status != 200) { return }
+
+                    res(await resp.json())
+                } catch(e) {
+                    rej(e)
+                }
+
+            })
+
+            // As soon as `gasz.in` is visited, make a GET call
+            // to get latest price recommendation, to show it to user
+            getLatestGasPrice().then(v => {
+
+                document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${v['fastest']} Gwei | Fast : ${v['fast']} Gwei | Average : ${v['average']} Gwei | SafeLow : ${v['safeLow']} Gwei 🐢`
+
+            }).catch(console.error)
+
+            // Setting up periodic call for latest gas price, which will
+            // keep showing fresh gas price recommendation every 5 sec ( auto update )
             window.PollingGasZ = {
                 handler: setInterval(async _ => {
 
                             try {
 
-                                const resp = await fetch('http://localhost:7000/v1/latest')
-
-                                if(resp.status != 200) { return }
-
-                                const body = await resp.json()
-
-                                document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${body['fastest']} Gwei | Fast : ${body['fast']} Gwei | Average : ${body['average']} Gwei | SafeLow : ${body['safeLow']} Gwei 🐢`
+                                let resp = await getLatestGasPrice()
+                                document.getElementById('live-price-feed').innerHTML = `🚀 Fastest : ${resp['fastest']} Gwei | Fast : ${resp['fast']} Gwei | Average : ${resp['average']} Gwei | SafeLow : ${resp['safeLow']} Gwei 🐢`
 
                             } catch(e) {
 
