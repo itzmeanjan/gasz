@@ -127,6 +127,14 @@ to `wss://gasz.in/v1/subscribe`.
 
 If you want to receive unconditional gas price updates, you should check [this example](https://github.com/itzmeanjan/gasz/blob/4759e74335288b31666547c628068c19675fa03b/example/index.js#L61-L69).
 
+**New 🎉** 
+
+You can always send HTTP GET request to `gasz.in` for getting latest gas price recommendation
+
+```bash
+curl -s https://gasz.in/v1/latest
+```
+
 ## Disclaimer
 
 `gasz.in` doesn't ever hope to replace `ethgasstation.info`, rather it hopes to improve UX by adding support for real-time gas price notification API.

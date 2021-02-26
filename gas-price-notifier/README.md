@@ -29,16 +29,10 @@ RedisDB=0
 RedisPubSubChannel=gas-price
 ```
 
-- You can build it now
-
-```bash
-go build
-```
-
 - Running 👇 starts backend application
 
 ```bash
-./gas-price-notifier
+make run # building to be done before running
 ```
 
 > Make sure you've started `gas-price-fetcher` script before starting ☝️
