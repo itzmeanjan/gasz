@@ -1,6 +1,10 @@
+> **Warning**
+
+**I've stopped maintaining this project !**
+
 # gasz
 
-Ethereum Gas Price Notifier @ [gasz.in](https://gasz.in)
+Ethereum Gas Price Notifier @ ~[gasz.in](https://gasz.in)~
 
 ![banner](sc/banner.gif)
 
